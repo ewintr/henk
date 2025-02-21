@@ -12,10 +12,11 @@ import (
 )
 
 type CompletionRequest struct {
-	System    string `json:"system"`
-	Prompt    string `json:"prompt"`
-	Model     string `json:"model"`
-	Streaming bool   `json:"stream"`
+	System    string          `json:"system"`
+	Prompt    string          `json:"prompt"`
+	Model     string          `json:"model"`
+	Streaming bool            `json:"stream"`
+	Format    json.RawMessage `json:"format,omitempty"`
 }
 
 type CompletionResponse struct {
@@ -38,12 +39,15 @@ func NewOllama(baseURL, embedModel, completeModel string) *Ollama {
 	}
 }
 
-func (o *Ollama) Complete(system, prompt string) (string, error) {
+func (o *Ollama) Complete(system, prompt string, format json.RawMessage) (string, error) {
 	url := fmt.Sprintf("%s/api/generate", o.baseURL)
 	requestBody := CompletionRequest{
 		Prompt: prompt,
 		Model:  o.completeModel,
 		System: system,
+	}
+	if format != nil {
+		requestBody.Format = format
 	}
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
@@ -64,6 +68,7 @@ func (o *Ollama) Complete(system, prompt string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not read response: %v", err)
 	}
+	// fmt.Println(string(body))
 
 	var completionResponse CompletionResponse
 	err = json.Unmarshal(body, &completionResponse)
@@ -72,6 +77,73 @@ func (o *Ollama) Complete(system, prompt string) (string, error) {
 	}
 
 	return completionResponse.Response, nil
+}
+
+const snippetSchema = `{
+  "type": "object",
+  "properties": {
+    "snippets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["function", "type", "constant", "variable", "other"]
+          },
+          "lineRange": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": ["start", "end"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["identifier", "kind", "lineRange"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["snippets"],
+  "additionalProperties": false
+}`
+
+type Snippet struct {
+	Identifier string `json:"identifier"`
+	Kind       string `json:"kind"`
+	LineRange  struct {
+		Start int `json:"start"`
+		End   int `json:"end"`
+	} `json:"lineRange"`
+}
+
+type SnippetCompletionResponse struct {
+	Snippets []Snippet `json:"snippets"`
+}
+
+func (o *Ollama) CompleteWithSnippets(system, prompt string) ([]Snippet, error) {
+	resp, err := o.Complete(system, prompt, []byte(snippetSchema))
+	if err != nil {
+		return nil, err
+	}
+	var snippetCompletionResponse SnippetCompletionResponse
+	err = json.Unmarshal([]byte(resp), &snippetCompletionResponse)
+	if err != nil {
+		return nil, fmt.Errorf("could not unmarshal response: %v ", err)
+	}
+
+	return snippetCompletionResponse.Snippets, nil
 }
 
 func (o *Ollama) Embed(inputText string) ([]float32, error) {
