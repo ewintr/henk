@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"go-mod.ewintr.nl/henk/structure"
 )
@@ -9,11 +10,12 @@ import (
 func main() {
 	filePath := "." // Replace with your Go file path
 
-	tree, err := structure.BuildTree(filePath)
+	project, err := structure.NewProject(filePath)
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
-	structure.PrintTree(tree, "")
+	fmt.Printf("%s\n", project.Tree())
 
 	// err := structure.ProcessGoFile(filePath)
 	// if err != nil {
