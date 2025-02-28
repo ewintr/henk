@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"go-mod.ewintr.nl/henk/structure"
+	"go-mod.ewintr.nl/henk/parse"
 )
 
 func main() {
 	filePath := "." // Replace with your Go file path
 
-	project, err := structure.NewProject(filePath)
+	project, err := parse.NewProject(filePath)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
