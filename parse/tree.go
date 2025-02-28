@@ -1,10 +1,16 @@
 package parse
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
+)
+
+var (
+	ErrNotATextFile = errors.New("not a text file")
 )
 
 type ElementType string
@@ -16,8 +22,10 @@ type Element struct {
 }
 
 type File struct {
+	Binary      bool
 	Description string
 	Path        string
+	Content     string
 	Elements    []Element
 }
 
@@ -95,9 +103,18 @@ func (p *Project) Tree() string {
 }
 
 func NewFile(path string) (*File, error) {
-	// fmt.Println(path)
 	file := &File{
 		Path: path,
+	}
+	txt, err := readTextFile(path)
+	switch {
+	case errors.Is(err, ErrNotATextFile):
+		file.Binary = true
+	case err != nil:
+		return nil, err
+	default:
+		file.Binary = false
+		file.Content = txt
 	}
 
 	return file, nil
@@ -153,4 +170,21 @@ func (d *Directory) Tree(indent int) []string {
 
 	return res
 
+}
+
+func readTextFile(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	for i := 0; i < len(data); i++ {
+		r, size := utf8.DecodeRune(data[i:])
+		i += size - 1
+		if r == utf8.RuneError && !strings.ContainsRune("\r\n\t ", r) {
+			return "", ErrNotATextFile
+		}
+	}
+
+	return string(data), nil
 }

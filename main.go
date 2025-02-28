@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"go-mod.ewintr.nl/henk/llm"
 	"go-mod.ewintr.nl/henk/parse"
 )
 
@@ -17,6 +18,19 @@ func main() {
 	}
 	fmt.Printf("%s\n", project.Tree())
 
+	f, err := parse.NewFile("./llm/memory.go")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	ollamaClient := llm.NewOllama("http://192.168.1.12:11434", "nomic-embed-text:latest", "qwen2.5-coder:32b-instruct-q8_0")
+	short, long, err := parse.Describe(f, ollamaClient)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("short: %s\n\nlong: %s\n", short, long)
+
 	// err := structure.ProcessGoFile(filePath)
 	// if err != nil {
 	// 	fmt.Println(err)
@@ -28,7 +42,6 @@ func main() {
 // if err != nil {
 // 	log.Fatalf("Error walking the path: %v\n", err)
 // }
-// ollamaClient := llm.NewOllama("http://192.168.1.12:11434", "nomic-embed-text:latest", "qwen2.5-coder:32b-instruct-q8_0")
 
 // response, err := ollamaClient.Complete("You are a nice person.", "Say Hi!")
 // if err != nil {
