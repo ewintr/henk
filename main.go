@@ -255,7 +255,7 @@ If the file specified with path doesn't exist, it will be created.`,
 type EditFileInput struct {
 	Path   string `json:"path" jsonschema_description:"The path to the file"`
 	OldStr string `json:"old_str" jsonschema_description:"Text to search - must match exactly and must only have one match extacly"`
-	NewStr string `json:"new_str" jsonschema_description:"Test to replace old_str with"`
+	NewStr string `json:"new_str" jsonschema_description:"Text to replace old_str with"`
 }
 
 var EditFileInputSchema = GenerateSchema[EditFileInput]()
