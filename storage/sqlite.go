@@ -15,11 +15,7 @@ var (
 	ErrSqliteFailure            = errors.New("sqlite returned an error")
 )
 
-type Sqlite struct {
-	db *sql.DB
-}
-
-func NewSqlite(dbPath string) (*Sqlite, error) {
+func NewSqlite(dbPath string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidConfiguration, err)
@@ -29,9 +25,7 @@ func NewSqlite(dbPath string) (*Sqlite, error) {
 		return nil, err
 	}
 
-	return &Sqlite{
-		db: db,
-	}, nil
+	return db, nil
 }
 
 func migrate(db *sql.DB, wanted []string) error {

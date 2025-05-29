@@ -19,8 +19,15 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	_, err := storage.NewSqlite(fmt.Sprintf("%s/henk.db", henkDir))
+	db, err := storage.NewSqlite(fmt.Sprintf("%s/henk.db", henkDir))
 	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fileRepo := storage.NewSqliteFile(db)
+
+	index := agent.NewIndex(fileRepo)
+	if err := index.Refresh(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
