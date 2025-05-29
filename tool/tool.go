@@ -7,21 +7,20 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-type Definition struct {
-	Name        string                         `json:"name"`
-	Description string                         `json:"description"`
-	InputSchema anthropic.ToolInputSchemaParam `json:"input_schema"`
-	Function    func(input json.RawMessage) (string, error)
+type Tool interface {
+	Name() string
+	Description() string
+	InputSchema() anthropic.ToolInputSchemaParam
+	Execute(input json.RawMessage) (string, error)
 }
 
-func GenerateSchema[T any]() anthropic.ToolInputSchemaParam {
+func GenerateSchema(t any) anthropic.ToolInputSchemaParam {
 	reflector := jsonschema.Reflector{
 		AllowAdditionalProperties: false,
 		DoNotReference:            true,
 	}
-	var v T
 
-	schema := reflector.Reflect(v)
+	schema := reflector.Reflect(t)
 
 	return anthropic.ToolInputSchemaParam{
 		Properties: schema.Properties,

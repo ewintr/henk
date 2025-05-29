@@ -14,11 +14,11 @@ import (
 
 type Agent struct {
 	client *anthropic.Client
-	tools  []tool.Definition
+	tools  []tool.Tool
 	done   chan bool
 }
 
-func New(client *anthropic.Client, tools []tool.Definition) *Agent {
+func New(client *anthropic.Client, tools []tool.Tool) *Agent {
 	return &Agent{
 		client: client,
 		tools:  tools,
@@ -100,11 +100,11 @@ func (a *Agent) runCommand(input string) {
 }
 
 func (a *Agent) executeTool(id, name string, input json.RawMessage) anthropic.ContentBlockParamUnion {
-	var toolDef tool.Definition
+	var t tool.Tool
 	var found bool
-	for _, tool := range a.tools {
-		if tool.Name == name {
-			toolDef = tool
+	for _, i := range a.tools {
+		if i.Name() == name {
+			t = i
 			found = true
 			break
 		}
@@ -113,7 +113,7 @@ func (a *Agent) executeTool(id, name string, input json.RawMessage) anthropic.Co
 		return anthropic.NewToolResultBlock(id, "tool not found", true)
 	}
 	fmt.Printf("\u001b[92mtool\u001b[0m: %s(%s)\n", name, input)
-	response, err := toolDef.Function(input)
+	response, err := t.Execute(input)
 	if err != nil {
 		return anthropic.NewToolResultBlock(id, err.Error(), true)
 	}
@@ -126,9 +126,9 @@ func (a *Agent) runInference(ctx context.Context, conversation []anthropic.Messa
 	for _, tool := range a.tools {
 		anthropicTools = append(anthropicTools, anthropic.ToolUnionParam{
 			OfTool: &anthropic.ToolParam{
-				Name:        tool.Name,
-				Description: anthropic.String(tool.Description),
-				InputSchema: tool.InputSchema,
+				Name:        tool.Name(),
+				Description: anthropic.String(tool.Description()),
+				InputSchema: tool.InputSchema(),
 			},
 		})
 	}
