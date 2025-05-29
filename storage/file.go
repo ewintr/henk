@@ -34,7 +34,7 @@ func (r *SqliteFile) Store(file internal.File) error {
 	return nil
 }
 
-func (r *SqliteFile) GetByPath(path string) (internal.File, error) {
+func (r *SqliteFile) FindByPath(path string) (internal.File, error) {
 	row := r.db.QueryRow(`
 SELECT path, hash, file_type, updated, summary
 FROM file
@@ -54,6 +54,35 @@ WHERE path = ?
 	file.Updated = time.Unix(lastUpdatedUnix, 0)
 
 	return file, nil
+}
+
+func (r *SqliteFile) FindAll() ([]internal.File, error) {
+	rows, err := r.db.Query(`
+SELECT path, hash, file_type, updated, summary
+FROM file
+ORDER BY path ASC
+`)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+	}
+	defer rows.Close()
+
+	var files []internal.File
+	for rows.Next() {
+		var file internal.File
+		var lastUpdatedUnix int64
+		if err := rows.Scan(&file.Path, &file.Hash, &file.FileType, &lastUpdatedUnix, &file.Summary); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+		}
+		file.Updated = time.Unix(lastUpdatedUnix, 0)
+		files = append(files, file)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+	}
+
+	return files, nil
 }
 
 func (r *SqliteFile) ListPaths() ([]string, error) {

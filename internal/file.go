@@ -11,7 +11,8 @@ type File struct {
 }
 
 type FileIndex interface {
-	GetByPath(path string) (File, error)
+	FindByPath(path string) (File, error)
+	FindAll() ([]File, error)
 	ListPaths() ([]string, error)
 	Store(file File) error
 	Delete(path string) error
