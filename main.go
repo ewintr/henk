@@ -34,7 +34,7 @@ func main() {
 
 	client := anthropic.NewClient()
 
-	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles()}
+	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo)}
 	h := agent.New(&client, tools)
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())

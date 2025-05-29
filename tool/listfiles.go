@@ -2,10 +2,9 @@ package tool
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"go-mod.ewintr.nl/henk/internal"
 )
 
 type ListFilesInput struct {
@@ -14,12 +13,14 @@ type ListFilesInput struct {
 
 type ListFiles struct {
 	inputSchema anthropic.ToolInputSchemaParam
+	fileRepo    internal.FileIndex
 }
 
-func NewListFiles() *ListFiles {
+func NewListFiles(fileRepo internal.FileIndex) *ListFiles {
 	var schema ListFilesInput
 	return &ListFiles{
 		inputSchema: GenerateSchema(schema),
+		fileRepo:    fileRepo,
 	}
 }
 
@@ -32,41 +33,11 @@ func (lf *ListFiles) InputSchema() anthropic.ToolInputSchemaParam {
 }
 
 func (lf *ListFiles) Execute(input json.RawMessage) (string, error) {
-	listFilesInput := ListFilesInput{}
-	if err := json.Unmarshal(input, &listFilesInput); err != nil {
+	list, err := lf.fileRepo.ListPaths()
+	if err != nil {
 		return "", err
 	}
-
-	dir := "."
-	if listFilesInput.Path != "" {
-		dir = listFilesInput.Path
-	}
-
-	var files []string
-	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-
-		if relPath != "." {
-			if info.IsDir() {
-				files = append(files, relPath+"/")
-			} else {
-				files = append(files, relPath)
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return "", err
-	}
-
-	result, err := json.Marshal(files)
+	result, err := json.Marshal(list)
 	if err != nil {
 		return "", err
 	}
