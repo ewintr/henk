@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"go-mod.ewintr.nl/henk/internal"
 )
 
 type SqliteFile struct {
@@ -16,7 +18,7 @@ func NewSqliteFile(db *sql.DB) *SqliteFile {
 	}
 }
 
-func (r *SqliteFile) Store(file File) error {
+func (r *SqliteFile) Store(file internal.File) error {
 	if file.Updated.IsZero() {
 		file.Updated = time.Now()
 	}
@@ -32,21 +34,21 @@ func (r *SqliteFile) Store(file File) error {
 	return nil
 }
 
-func (r *SqliteFile) GetByPath(path string) (File, error) {
+func (r *SqliteFile) GetByPath(path string) (internal.File, error) {
 	row := r.db.QueryRow(`
 SELECT path, hash, file_type, updated, summary
 FROM file
 WHERE path = ?
 `, path)
 
-	var file File
+	var file internal.File
 	var lastUpdatedUnix int64
 	err := row.Scan(&file.Path, &file.Hash, &file.FileType, &lastUpdatedUnix, &file.Summary, path)
 	switch {
 	case err == sql.ErrNoRows:
-		return File{}, ErrNotFound
+		return internal.File{}, ErrNotFound
 	case err != nil:
-		return File{}, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+		return internal.File{}, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
 	file.Updated = time.Unix(lastUpdatedUnix, 0)

@@ -9,14 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go-mod.ewintr.nl/henk/storage"
+	"go-mod.ewintr.nl/henk/internal"
 )
 
 type Index struct {
-	fileRepo storage.FileIndex
+	fileRepo internal.FileIndex
 }
 
-func NewIndex(fileRepo storage.FileIndex) *Index {
+func NewIndex(fileRepo internal.FileIndex) *Index {
 	return &Index{
 		fileRepo: fileRepo,
 	}
@@ -24,7 +24,7 @@ func NewIndex(fileRepo storage.FileIndex) *Index {
 
 func (i *Index) Refresh() error {
 	dir := "."
-	var files []storage.File
+	var files []internal.File
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -36,7 +36,7 @@ func (i *Index) Refresh() error {
 		}
 
 		if !strings.HasPrefix(relPath, ".") && !info.IsDir() {
-			files = append(files, storage.File{
+			files = append(files, internal.File{
 				Path:    relPath,
 				Updated: info.ModTime(),
 			})
