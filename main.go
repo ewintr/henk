@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/anthropics/anthropic-sdk-go"
 	"go-mod.ewintr.nl/henk/agent"
 	"go-mod.ewintr.nl/henk/storage"
 	"go-mod.ewintr.nl/henk/tool"
@@ -32,10 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	client := anthropic.NewClient()
+	llm := agent.NewClaude()
 
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo)}
-	h := agent.New(&client, tools)
+	h := agent.New(llm, tools)
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}
