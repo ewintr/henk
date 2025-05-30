@@ -24,7 +24,7 @@ func NewIndex(fileRepo internal.FileIndex) *Index {
 
 func (i *Index) Refresh() error {
 	dir := "."
-	var files []internal.File
+	currentFiles := make(map[string]internal.File, 0)
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -36,10 +36,15 @@ func (i *Index) Refresh() error {
 		}
 
 		if !strings.HasPrefix(relPath, ".") && !info.IsDir() {
-			files = append(files, internal.File{
+			hash, err := calculateMD5(relPath)
+			if err != nil {
+				return fmt.Errorf("could not calculate md5 of %s: %v", relPath, err)
+			}
+			currentFiles[relPath] = internal.File{
 				Path:    relPath,
 				Updated: info.ModTime(),
-			})
+				Hash:    hash,
+			}
 		}
 
 		return nil
@@ -47,20 +52,31 @@ func (i *Index) Refresh() error {
 		return fmt.Errorf("could not list files: %v", err)
 	}
 
-	// fmt.Printf("%+v\n", files)
+	knownFiles, err := i.fileRepo.FindAll()
+	if err != nil {
+		return err
+	}
+	needsDeletion := make(map[string]bool, len(knownFiles))
+	for _, kf := range knownFiles {
+		needsDeletion[kf.Path] = true
+	}
 
-	// TODO find deleted
-
-	for _, f := range files {
-		// fmt.Println(p)
-		hash, err := calculateMD5(f.Path)
-		if err != nil {
-			return fmt.Errorf("could not calculate md5 of %s: %v", f, err)
+	needsUpdate := make([]string, 0)
+	for _, cf := range currentFiles {
+		knownVersion, ok := knownFiles[cf.Path]
+		if !ok {
+			needsUpdate = append(needsUpdate, cf.Path)
+			continue
 		}
-		f.Hash = hash
+		if knownVersion.Hash != cf.Hash {
+			needsUpdate = append(needsUpdate, cf.Path)
+			delete(needsDeletion, cf.Path)
+		}
+	}
 
-		if err := i.fileRepo.Store(f); err != nil {
-			return fmt.Errorf("could not store file %s: %v", f, err)
+	for _, p := range needsUpdate {
+		if err := i.fileRepo.Store(currentFiles[p]); err != nil {
+			return fmt.Errorf("could not store file %s: %v", p, err)
 		}
 
 	}

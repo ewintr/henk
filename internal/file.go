@@ -12,7 +12,7 @@ type File struct {
 
 type FileIndex interface {
 	FindByPath(path string) (File, error)
-	FindAll() ([]File, error)
+	FindAll() (map[string]File, error)
 	ListPaths() ([]string, error)
 	Store(file File) error
 	Delete(path string) error

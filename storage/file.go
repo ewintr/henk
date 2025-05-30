@@ -56,7 +56,7 @@ WHERE path = ?
 	return file, nil
 }
 
-func (r *SqliteFile) FindAll() ([]internal.File, error) {
+func (r *SqliteFile) FindAll() (map[string]internal.File, error) {
 	rows, err := r.db.Query(`
 SELECT path, hash, file_type, updated, summary
 FROM file
@@ -82,7 +82,12 @@ ORDER BY path ASC
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
-	return files, nil
+	res := make(map[string]internal.File, len(files))
+	for _, f := range files {
+		res[f.Path] = f
+	}
+
+	return res, nil
 }
 
 func (r *SqliteFile) ListPaths() ([]string, error) {
