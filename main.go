@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"go-mod.ewintr.nl/henk/agent"
+	"go-mod.ewintr.nl/henk/llm"
 	"go-mod.ewintr.nl/henk/storage"
 	"go-mod.ewintr.nl/henk/tool"
 )
@@ -31,10 +32,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	llm := agent.NewClaude()
-
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo)}
-	h := agent.New(llm, tools)
+	h := agent.New(llm.NewClaude(), tools)
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}

@@ -1,26 +1,27 @@
 package agent
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
+	"go-mod.ewintr.nl/henk/llm"
 	"go-mod.ewintr.nl/henk/tool"
 )
 
 type Agent struct {
-	llm   LLM
+	llm   llm.LLM
 	tools []tool.Tool
+	ui    *UI
 	done  chan bool
 }
 
-func New(llm LLM, tools []tool.Tool) *Agent {
+func New(llm llm.LLM, tools []tool.Tool) *Agent {
 	return &Agent{
 		llm:   llm,
 		tools: tools,
+		ui:    NewUI(),
 		done:  make(chan bool),
 	}
 }
@@ -28,40 +29,36 @@ func New(llm LLM, tools []tool.Tool) *Agent {
 func (a *Agent) Run() error {
 	go a.converse()
 
-	for {
-		select {
-		case <-a.done:
-			fmt.Println("Bye!")
-			return nil
-		}
-	}
-
+	<-a.done
+	fmt.Println("exiting...")
+	a.ui.In() <- Message{Type: TypeGeneral, Body: "Bye!"}
+	a.ui.Close()
+	return nil
 }
 
 func (a *Agent) converse() error {
 	ctx := context.Background()
-	conversation := make([]Message, 0)
-	scanner := bufio.NewScanner(os.Stdin)
+	conversation := make([]llm.Message, 0)
 
-	fmt.Println("Chat with Henk (use '/quit' to quit)")
+	a.ui.In() <- Message{
+		Type: TypeGeneral,
+		Body: "Chat with Henk (use '/quit' to quit)",
+	}
 
 	readUserInput := true
 	for {
 		if readUserInput {
-			fmt.Print("\u001b[94mYou\u001b[0m: ")
-			if !scanner.Scan() {
-				break
-			}
-			userInput := scanner.Text()
+			a.ui.In() <- Message{Type: TypePrompt}
+			userInput := <-a.ui.out
 			if strings.HasPrefix(userInput, "/") {
 				a.runCommand(userInput)
 			}
 
-			userMessage := Message{
-				Role: RoleUser,
-				Content: []ContentBlock{{
+			userMessage := llm.Message{
+				Role: llm.RoleUser,
+				Content: []llm.ContentBlock{{
 					Text: userInput,
-					Type: ContentTypeText,
+					Type: llm.ContentTypeText,
 				}},
 			}
 			conversation = append(conversation, userMessage)
@@ -73,17 +70,17 @@ func (a *Agent) converse() error {
 		}
 		conversation = append(conversation, message)
 
-		toolResults := make([]Message, 0)
+		toolResults := make([]llm.Message, 0)
 		for _, content := range message.Content {
 			switch content.Type {
 			case "text":
-				fmt.Printf("\u001b[93mHenk\u001b[0m: %s\n", content.Text)
+				a.ui.In() <- Message{Type: TypeHenk, Body: content.Text}
 			case "tool_use":
 				toolResult := a.executeTool(content.ToolUse.ID, content.ToolUse.Name, content.ToolUse.Input)
-				toolResults = append(toolResults, Message{
-					Role: RoleUser,
-					Content: []ContentBlock{{
-						Type:       ContentTypeToolResult,
+				toolResults = append(toolResults, llm.Message{
+					Role: llm.RoleUser,
+					Content: []llm.ContentBlock{{
+						Type:       llm.ContentTypeToolResult,
 						ToolResult: toolResult,
 					}},
 				})
@@ -97,20 +94,19 @@ func (a *Agent) converse() error {
 		readUserInput = false
 		conversation = append(conversation, toolResults...)
 	}
-	return nil
 }
 
 func (a *Agent) runCommand(input string) {
+	fmt.Println(input)
 	cmd, _, _ := strings.Cut(input, " ")
 	cmd = strings.TrimPrefix(cmd, "/")
 	switch cmd {
 	case "quit":
 		a.done <- true
 	}
-
 }
 
-func (a *Agent) executeTool(id, name string, input json.RawMessage) ToolResult {
+func (a *Agent) executeTool(id, name string, input json.RawMessage) llm.ToolResult {
 	var t tool.Tool
 	var found bool
 	for _, i := range a.tools {
@@ -121,23 +117,23 @@ func (a *Agent) executeTool(id, name string, input json.RawMessage) ToolResult {
 		}
 	}
 	if !found {
-		return ToolResult{
+		return llm.ToolResult{
 			ID:     id,
 			Result: "tool not found",
 			Error:  true,
 		}
 	}
-	fmt.Printf("\u001b[92mtool\u001b[0m: %s(%s): %s\n", name, id, input)
+	a.ui.In() <- Message{Type: TypeTool, Body: fmt.Sprintf("%s(%s)", name, input)}
 	response, err := t.Execute(input)
 	if err != nil {
-		return ToolResult{
+		return llm.ToolResult{
 			ID:     id,
 			Result: err.Error(),
 			Error:  true,
 		}
 	}
 
-	return ToolResult{
+	return llm.ToolResult{
 		ID:     id,
 		Result: response,
 	}
