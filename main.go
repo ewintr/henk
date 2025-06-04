@@ -25,15 +25,18 @@ func main() {
 		os.Exit(1)
 	}
 	fileRepo := storage.NewSqliteFile(db)
+	llmClient := llm.NewClaude()
 
-	index := agent.NewIndex(fileRepo)
+	ui := agent.NewUI()
+
+	index := agent.NewIndex(fileRepo, llmClient, ui.In(), ui.Out())
 	if err := index.Refresh(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo)}
-	h := agent.New(llm.NewClaude(), tools)
+	h := agent.New(llmClient, tools, ui.In(), ui.Out())
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}

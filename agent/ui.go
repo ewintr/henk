@@ -14,6 +14,7 @@ const (
 	TypePrompt  MessageType = "prompt"
 	TypeTool    MessageType = "tool"
 	TypeError   MessageType = "error"
+	TypeExit    MessageType = "exit"
 )
 
 type Message struct {
@@ -61,6 +62,9 @@ func (ui *UI) Run() {
 			ui.out <- userInput
 		case TypeError:
 			fmt.Printf("\u001b[91mError\u001b[0m: %s\n", msg.Body)
+		case TypeExit:
+			fmt.Println("Bye!")
+			ui.Close()
 		}
 	}
 }

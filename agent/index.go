@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -10,15 +11,23 @@ import (
 	"strings"
 
 	"go-mod.ewintr.nl/henk/internal"
+	"go-mod.ewintr.nl/henk/llm"
+	"go-mod.ewintr.nl/henk/tool"
 )
 
 type Index struct {
 	fileRepo internal.FileIndex
+	llm      llm.LLM
+	out      chan Message
+	in       chan string
 }
 
-func NewIndex(fileRepo internal.FileIndex) *Index {
+func NewIndex(fileRepo internal.FileIndex, llm llm.LLM, out chan Message, in chan string) *Index {
 	return &Index{
 		fileRepo: fileRepo,
+		llm:      llm,
+		out:      out,
+		in:       in,
 	}
 }
 
@@ -74,18 +83,96 @@ func (i *Index) Refresh() error {
 		}
 	}
 
+	i.out <- Message{
+		Type: TypeGeneral,
+		Body: fmt.Sprintf("indexing %d files...", len(needsUpdate)),
+	}
 	for _, p := range needsUpdate {
-		if err := i.fileRepo.Store(currentFiles[p]); err != nil {
+		curFile := currentFiles[p]
+		summary, err := i.summarizeFile(p)
+		if err != nil {
+			return fmt.Errorf("could not get summary for file %s: %v", p, err)
+		}
+		fmt.Println(summary)
+		curFile.Summary = summary
+		if err := i.fileRepo.Store(curFile); err != nil {
 			return fmt.Errorf("could not store file %s: %v", p, err)
 		}
 
 	}
+	i.out <- Message{
+		Type: TypeGeneral,
+		Body: "indexing finished",
+	}
 	return nil
 }
 
-func (i *Index) processFile(path string) error {
+func (i *Index) summarizeFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("could not read file %s: %v", path, err)
+	}
 
-	return nil
+	if len(content) > 10000 {
+		// Truncate or handle large files - this is a simple approach
+		content = content[:10000] // Take first 10K chars
+	}
+
+	ctx := context.Background()
+	conv := summaryConversation(path, string(content))
+	response, err := i.llm.RunInference(ctx, []tool.Tool{}, conv)
+	if err != nil {
+		return "", fmt.Errorf("could not generate summary for %s: %v", path, err)
+	}
+
+	summary := ""
+	for _, block := range response.Content {
+		if block.Type == llm.ContentTypeText {
+			summary = block.Text
+			break
+		}
+	}
+
+	return summary, nil
+}
+
+func summaryConversation(path string, content string) []llm.Message {
+	// Determine file type based on extension
+	ext := filepath.Ext(path)
+
+	var prompt string
+	switch ext {
+	case ".go", ".js", ".py", ".java", ".c", ".cpp":
+		prompt = fmt.Sprintf(
+			"This is a code file: %s\nPlease provide a concise summary (under 200 words) of what this code does, including key functions, purpose, and any notable patterns or techniques:\n\n%s",
+			path, content)
+	case ".md", ".txt", ".adoc":
+		prompt = fmt.Sprintf(
+			"This is a text document: %s\nPlease provide a concise summary (under 200 words) of the main ideas and content in this document:\n\n%s",
+			path, content)
+	case ".json", ".yaml", ".yml", ".toml":
+		prompt = fmt.Sprintf(
+			"This is a configuration file: %s\nPlease provide a concise summary (under 200 words) of what this configuration defines or controls:\n\n%s",
+			path, content)
+	default:
+		prompt = fmt.Sprintf(
+			"This is a file: %s\nPlease provide a concise summary (under 200 words) of what this file contains or defines:\n\n%s",
+			path, content)
+	}
+
+	conv := []llm.Message{
+		{
+			Role: llm.RoleUser,
+			Content: []llm.ContentBlock{
+				{
+					Type: llm.ContentTypeText,
+					Text: prompt,
+				},
+			},
+		},
+	}
+
+	return conv
 }
 
 func calculateMD5(filePath string) (string, error) {

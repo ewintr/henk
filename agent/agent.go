@@ -13,15 +13,17 @@ import (
 type Agent struct {
 	llm   llm.LLM
 	tools []tool.Tool
-	ui    *UI
+	out   chan Message
+	in    chan string
 	done  chan bool
 }
 
-func New(llm llm.LLM, tools []tool.Tool) *Agent {
+func New(llm llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
 	return &Agent{
 		llm:   llm,
 		tools: tools,
-		ui:    NewUI(),
+		out:   out,
+		in:    in,
 		done:  make(chan bool),
 	}
 }
@@ -30,9 +32,6 @@ func (a *Agent) Run() error {
 	go a.converse()
 
 	<-a.done
-	fmt.Println("exiting...")
-	a.ui.In() <- Message{Type: TypeGeneral, Body: "Bye!"}
-	a.ui.Close()
 	return nil
 }
 
@@ -40,7 +39,7 @@ func (a *Agent) converse() error {
 	ctx := context.Background()
 	conversation := make([]llm.Message, 0)
 
-	a.ui.In() <- Message{
+	a.out <- Message{
 		Type: TypeGeneral,
 		Body: "Chat with Henk (use '/quit' to quit)",
 	}
@@ -48,8 +47,8 @@ func (a *Agent) converse() error {
 	readUserInput := true
 	for {
 		if readUserInput {
-			a.ui.In() <- Message{Type: TypePrompt}
-			userInput := <-a.ui.out
+			a.out <- Message{Type: TypePrompt}
+			userInput := <-a.in
 			if strings.HasPrefix(userInput, "/") {
 				a.runCommand(userInput)
 			}
@@ -74,7 +73,7 @@ func (a *Agent) converse() error {
 		for _, content := range message.Content {
 			switch content.Type {
 			case "text":
-				a.ui.In() <- Message{Type: TypeHenk, Body: content.Text}
+				a.out <- Message{Type: TypeHenk, Body: content.Text}
 			case "tool_use":
 				toolResult := a.executeTool(content.ToolUse.ID, content.ToolUse.Name, content.ToolUse.Input)
 				toolResults = append(toolResults, llm.Message{
@@ -97,11 +96,12 @@ func (a *Agent) converse() error {
 }
 
 func (a *Agent) runCommand(input string) {
-	fmt.Println(input)
+	// fmt.Println(input)
 	cmd, _, _ := strings.Cut(input, " ")
 	cmd = strings.TrimPrefix(cmd, "/")
 	switch cmd {
 	case "quit":
+		a.out <- Message{Type: TypeExit}
 		a.done <- true
 	}
 }
@@ -123,7 +123,7 @@ func (a *Agent) executeTool(id, name string, input json.RawMessage) llm.ToolResu
 			Error:  true,
 		}
 	}
-	a.ui.In() <- Message{Type: TypeTool, Body: fmt.Sprintf("%s(%s)", name, input)}
+	a.out <- Message{Type: TypeTool, Body: fmt.Sprintf("%s(%s)", name, input)}
 	response, err := t.Execute(input)
 	if err != nil {
 		return llm.ToolResult{
