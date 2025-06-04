@@ -35,7 +35,7 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 				tr := block.ToolResult
 				antBlock = anthropic.NewToolResultBlock(tr.ID, tr.Result, tr.Error)
 			default:
-				fmt.Printf("Error: unknown message content type: %s\n", block.Type)
+				return Message{}, fmt.Errorf("Error: unknown message content type: %s\n", block.Type)
 			}
 			switch msg.Role {
 			case RoleAssistant:
@@ -43,7 +43,7 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 			case RoleUser:
 				antConv = append(antConv, anthropic.NewUserMessage(antBlock))
 			default:
-				fmt.Printf("Error: unknown message role: %s\n", msg.Role)
+				return Message{}, fmt.Errorf("Error: unknown message role: %s\n", msg.Role)
 			}
 		}
 	}
@@ -58,15 +58,17 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 			},
 		})
 	}
+
 	antMessage, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.ModelClaude3_7SonnetLatest,
-		MaxTokens: int64(1024),
+		MaxTokens: int64(2048),
 		Messages:  antConv,
 		Tools:     antTools,
 	})
 	if err != nil {
-		fmt.Println(err)
+		return Message{}, err
 	}
+	// return Message{}, fmt.Errorf("here...")
 
 	message := Message{
 		Role:    RoleAssistant,
@@ -88,7 +90,7 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 			inputAny := *inputAnyPtr
 			input, ok := inputAny.(json.RawMessage)
 			if !ok {
-				fmt.Println("Error: could not cast tool input to json.RawMessage")
+				return Message{}, fmt.Errorf("could not cast tool input to json.RawMessage")
 			}
 			message.Content = append(message.Content, ContentBlock{
 				Type: ContentTypeToolUse,
@@ -99,9 +101,9 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 				},
 			})
 		default:
-			fmt.Printf("Error: unknown content type: %s\n", *tp)
+			return Message{}, fmt.Errorf("unknown content type: %s\n", *tp)
 		}
 	}
 
-	return message, err
+	return message, nil
 }

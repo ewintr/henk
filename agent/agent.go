@@ -6,32 +6,40 @@ import (
 	"fmt"
 	"strings"
 
+	"go-mod.ewintr.nl/henk/internal"
 	"go-mod.ewintr.nl/henk/llm"
 	"go-mod.ewintr.nl/henk/tool"
 )
 
 type Agent struct {
-	llm   llm.LLM
-	tools []tool.Tool
-	out   chan Message
-	in    chan string
-	done  chan bool
+	llmClient llm.LLM
+	tools     []tool.Tool
+	index     *Index
+	out       chan Message
+	in        chan string
+	done      chan bool
+	ctx       context.Context
 }
 
-func New(llm llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
+func New(ctx context.Context, fileRepo internal.FileIndex, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
 	return &Agent{
-		llm:   llm,
-		tools: tools,
-		out:   out,
-		in:    in,
-		done:  make(chan bool),
+		llmClient: llmClient,
+		tools:     tools,
+		index:     NewIndex(fileRepo, llmClient, out),
+		out:       out,
+		in:        in,
+		done:      make(chan bool),
+		ctx:       ctx,
 	}
 }
 
 func (a *Agent) Run() error {
 	go a.converse()
+	// if err := a.index.Refresh(); err != nil {
+	// 	a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
+	// }
 
-	<-a.done
+	<-a.ctx.Done()
 	return nil
 }
 
@@ -47,10 +55,10 @@ func (a *Agent) converse() error {
 	readUserInput := true
 	for {
 		if readUserInput {
-			a.out <- Message{Type: TypePrompt}
 			userInput := <-a.in
 			if strings.HasPrefix(userInput, "/") {
 				a.runCommand(userInput)
+				continue
 			}
 
 			userMessage := llm.Message{
@@ -63,12 +71,13 @@ func (a *Agent) converse() error {
 			conversation = append(conversation, userMessage)
 		}
 
-		message, err := a.llm.RunInference(ctx, a.tools, conversation)
+		message, err := a.llmClient.RunInference(ctx, a.tools, conversation)
 		if err != nil {
-			return err
+			a.out <- Message{Type: TypeError, Body: err.Error()}
+			continue
 		}
-		conversation = append(conversation, message)
 
+		conversation = append(conversation, message)
 		toolResults := make([]llm.Message, 0)
 		for _, content := range message.Content {
 			switch content.Type {
@@ -96,13 +105,13 @@ func (a *Agent) converse() error {
 }
 
 func (a *Agent) runCommand(input string) {
-	// fmt.Println(input)
 	cmd, _, _ := strings.Cut(input, " ")
 	cmd = strings.TrimPrefix(cmd, "/")
 	switch cmd {
+	case "refresh":
+		// go a.index.Refresh()
 	case "quit":
 		a.out <- Message{Type: TypeExit}
-		a.done <- true
 	}
 }
 

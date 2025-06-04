@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -25,18 +26,12 @@ func main() {
 		os.Exit(1)
 	}
 	fileRepo := storage.NewSqliteFile(db)
+
+	ctx, cancel := context.WithCancel(context.Background())
 	llmClient := llm.NewClaude()
-
-	ui := agent.NewUI()
-
-	index := agent.NewIndex(fileRepo, llmClient, ui.In(), ui.Out())
-	if err := index.Refresh(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
+	ui := agent.NewUI(cancel)
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo)}
-	h := agent.New(llmClient, tools, ui.In(), ui.Out())
+	h := agent.New(ctx, fileRepo, llmClient, tools, ui.In(), ui.Out())
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}

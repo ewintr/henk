@@ -19,15 +19,13 @@ type Index struct {
 	fileRepo internal.FileIndex
 	llm      llm.LLM
 	out      chan Message
-	in       chan string
 }
 
-func NewIndex(fileRepo internal.FileIndex, llm llm.LLM, out chan Message, in chan string) *Index {
+func NewIndex(fileRepo internal.FileIndex, llm llm.LLM, out chan Message) *Index {
 	return &Index{
 		fileRepo: fileRepo,
 		llm:      llm,
 		out:      out,
-		in:       in,
 	}
 }
 
