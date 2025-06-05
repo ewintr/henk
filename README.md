@@ -29,5 +29,5 @@ Henk will focus on augmenting your workflow with:
 Henk will be designed for seamless integration with your existing tools:
 
 * **Remote Control:** Henk will integrate with your editor via a plugin or API, allowing you to access its features without leaving your development environment.
-* **Local LLM Support:** **Privacy and Control: Henk is designed to work seamlessly with local LLMs, giving you complete control over your data and costs.**
+* **Local LLM Support:** Privacy and Control: Henk is designed to work seamlessly with local LLMs, giving you complete control over your data and costs.
 
