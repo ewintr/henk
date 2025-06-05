@@ -20,5 +20,5 @@ In the future:
   - **Suggestions:**  For example, identifying opportunities to refactor code for improved readability or performance.
   - **Reviews:**  Highlighting potential bugs, security vulnerabilities, or code style issues.
   - **Snippets:**  Generating boilerplate code for common tasks, such as creating unit tests or API endpoints.
-- Henk will be designed to be easily integrated with your favorite editor through a plugin-based architecture.
+- Henk will be designed to be remote controlled, for easy integration with your favorite editor.
 - Henk will work well with local LLMs
