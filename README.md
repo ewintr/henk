@@ -19,15 +19,12 @@ Key Principle: Henk will never directly modify your code.
 
 Henk will focus on augmenting your workflow with:
 
-* **Code Understanding & Analysis:**
-  * **Guidance:** Describe the feature you want to implement and Henk will help you break down complex features into smaller, manageable tasks, suggesting relevant algorithms or design patterns.
-  * **Reviews:** Highlighting potential bugs, security vulnerabilities, or code style issues.
-* **Code Generation & Assistance:**
-  * **Suggestions:** Identifying opportunities to refactor code for improved readability or performance.
-  * **Snippets:** Generating boilerplate code for common tasks, such as creating unit tests or API endpoints.
+* **Guidance:** Describe the feature you want to implement and Henk will help you break down complex features into smaller, manageable tasks, suggesting relevant algorithms or design patterns.
+* **Reviews:** Identifying opportunities to refactor code for improved readability or performance. Highlighting potential bugs, security vulnerabilities, or code style issues.
+* **Snippets:** Generating boilerplate code for common tasks, such as creating unit tests or API endpoints.
 
 Henk will be designed for seamless integration with your existing tools:
 
-* **Remote Control:** Henk will integrate with your editor via a plugin or API, allowing you to access its features without leaving your development environment.
+* **Remote Control:** Henk will expose a local API for remote control, to make it easy to write a plugin for your favorite editor or IDE. 
 * **Local LLM Support:** Privacy and Control: Henk is designed to work seamlessly with local LLMs, giving you complete control over your data and costs.
 
