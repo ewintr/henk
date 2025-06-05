@@ -6,7 +6,7 @@ An experimental AI tool designed to help and coach you, but that will not do you
 
 - LLMs produce code that often requires adaptation. They have a tendency to overengineer things, introduce subtle bugs, pick the wrong names for variables, etc. Specially when generating large changes, it can be challenging to explain what exactly you want different. 
 - If the code does not pass through your hands, you will not build a good mental map of the project. It is crucial for long-term maintainability that you _know_ what happens in the project.
-- An assistant should complement your toolchain, not replace it. You have already learned to edit text efficiently, no need to ask Claude "Please name foo to bar" and hope for the best. Leave the text manipulation to your favorite editor/IDE, and let the assistant only worry about applying LLMs.
+- An assistant should complement your toolchain, not replace it. You have already learned to edit text efficiently. No need to ask Claude "Please rename foo to bar" and hope for the best. Leave the text manipulation to your favorite editor/IDE, and let the assistant only worry about applying LLMs.
 
 ## What Henk will do
 
