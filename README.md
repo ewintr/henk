@@ -15,6 +15,8 @@ A code assistant that supports you well working, but that lets you hold the reig
 
 ## What Henk will do
 
+Currently in an early alpha stage, Henk can't do much yet. But the list below serves as a wish list for what could be implemented.
+
 **Key Principle**: Henk will never directly modify your code.
 
 Henk will focus on augmenting your workflow with:
