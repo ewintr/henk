@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"go-mod.ewintr.nl/henk/llm"
 	"go-mod.ewintr.nl/henk/storage"
@@ -19,6 +20,8 @@ type Index struct {
 	fileRepo storage.FileIndex
 	llm      llm.LLM
 	out      chan Message
+	busy     bool
+	sync.RWMutex
 }
 
 func NewIndex(fileRepo storage.FileIndex, llm llm.LLM, out chan Message) *Index {
@@ -29,7 +32,19 @@ func NewIndex(fileRepo storage.FileIndex, llm llm.LLM, out chan Message) *Index 
 	}
 }
 
-func (i *Index) Refresh() error {
+func (i *Index) Refresh(full bool) error {
+	i.Lock()
+	if i.busy {
+		i.out <- Message{
+			Type: TypeGeneral,
+			Body: "indexer currently working, try again later",
+		}
+		i.Unlock()
+		return nil
+	}
+	i.busy = true
+	i.Unlock()
+
 	dir := "."
 	currentFiles := make(map[string]storage.File, 0)
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -70,6 +85,11 @@ func (i *Index) Refresh() error {
 
 	needsUpdate := make([]string, 0)
 	for _, cf := range currentFiles {
+		if full {
+			needsUpdate = append(needsUpdate, cf.Path)
+			continue
+		}
+
 		knownVersion, ok := knownFiles[cf.Path]
 		if !ok {
 			needsUpdate = append(needsUpdate, cf.Path)
@@ -83,6 +103,7 @@ func (i *Index) Refresh() error {
 
 	if len(needsUpdate) == 0 {
 		i.out <- Message{Type: TypeGeneral, Body: "nothing to index"}
+		i.busy = false
 		return nil
 	}
 
@@ -106,6 +127,7 @@ func (i *Index) Refresh() error {
 		Type: TypeGeneral,
 		Body: fmt.Sprintf("indexed %d file(s)", len(needsUpdate)),
 	}
+	i.busy = false
 	return nil
 }
 
