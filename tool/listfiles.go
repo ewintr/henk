@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"go-mod.ewintr.nl/henk/internal"
+	"go-mod.ewintr.nl/henk/storage"
 )
 
 type ListFilesInput struct {
@@ -13,10 +13,10 @@ type ListFilesInput struct {
 
 type ListFiles struct {
 	inputSchema anthropic.ToolInputSchemaParam
-	fileRepo    internal.FileIndex
+	fileRepo    storage.FileIndex
 }
 
-func NewListFiles(fileRepo internal.FileIndex) *ListFiles {
+func NewListFiles(fileRepo storage.FileIndex) *ListFiles {
 	var schema ListFilesInput
 	return &ListFiles{
 		inputSchema: GenerateSchema(schema),

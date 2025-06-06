@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go-mod.ewintr.nl/henk/internal"
 	"go-mod.ewintr.nl/henk/llm"
+	"go-mod.ewintr.nl/henk/storage"
 	"go-mod.ewintr.nl/henk/tool"
 )
 
@@ -21,7 +21,7 @@ type Agent struct {
 	ctx       context.Context
 }
 
-func New(ctx context.Context, fileRepo internal.FileIndex, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
+func New(ctx context.Context, fileRepo storage.FileIndex, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
 	return &Agent{
 		llmClient: llmClient,
 		tools:     tools,

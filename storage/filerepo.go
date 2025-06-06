@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	"go-mod.ewintr.nl/henk/internal"
 )
 
 type SqliteFile struct {
@@ -18,7 +16,7 @@ func NewSqliteFile(db *sql.DB) *SqliteFile {
 	}
 }
 
-func (r *SqliteFile) Store(file internal.File) error {
+func (r *SqliteFile) Store(file File) error {
 	if file.Updated.IsZero() {
 		file.Updated = time.Now()
 	}
@@ -34,21 +32,21 @@ func (r *SqliteFile) Store(file internal.File) error {
 	return nil
 }
 
-func (r *SqliteFile) FindByPath(path string) (internal.File, error) {
+func (r *SqliteFile) FindByPath(path string) (File, error) {
 	row := r.db.QueryRow(`
 SELECT path, hash, file_type, updated, summary
 FROM file
 WHERE path = ?
 `, path)
 
-	var file internal.File
+	var file File
 	var lastUpdatedUnix int64
 	err := row.Scan(&file.Path, &file.Hash, &file.FileType, &lastUpdatedUnix, &file.Summary, path)
 	switch {
 	case err == sql.ErrNoRows:
-		return internal.File{}, ErrNotFound
+		return File{}, ErrNotFound
 	case err != nil:
-		return internal.File{}, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+		return File{}, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
 	file.Updated = time.Unix(lastUpdatedUnix, 0)
@@ -56,7 +54,7 @@ WHERE path = ?
 	return file, nil
 }
 
-func (r *SqliteFile) FindAll() (map[string]internal.File, error) {
+func (r *SqliteFile) FindAll() (map[string]File, error) {
 	rows, err := r.db.Query(`
 SELECT path, hash, file_type, updated, summary
 FROM file
@@ -67,9 +65,9 @@ ORDER BY path ASC
 	}
 	defer rows.Close()
 
-	var files []internal.File
+	var files []File
 	for rows.Next() {
-		var file internal.File
+		var file File
 		var lastUpdatedUnix int64
 		if err := rows.Scan(&file.Path, &file.Hash, &file.FileType, &lastUpdatedUnix, &file.Summary); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
@@ -82,7 +80,7 @@ ORDER BY path ASC
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
-	res := make(map[string]internal.File, len(files))
+	res := make(map[string]File, len(files))
 	for _, f := range files {
 		res[f.Path] = f
 	}

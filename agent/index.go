@@ -10,18 +10,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go-mod.ewintr.nl/henk/internal"
 	"go-mod.ewintr.nl/henk/llm"
+	"go-mod.ewintr.nl/henk/storage"
 	"go-mod.ewintr.nl/henk/tool"
 )
 
 type Index struct {
-	fileRepo internal.FileIndex
+	fileRepo storage.FileIndex
 	llm      llm.LLM
 	out      chan Message
 }
 
-func NewIndex(fileRepo internal.FileIndex, llm llm.LLM, out chan Message) *Index {
+func NewIndex(fileRepo storage.FileIndex, llm llm.LLM, out chan Message) *Index {
 	return &Index{
 		fileRepo: fileRepo,
 		llm:      llm,
@@ -31,7 +31,7 @@ func NewIndex(fileRepo internal.FileIndex, llm llm.LLM, out chan Message) *Index
 
 func (i *Index) Refresh() error {
 	dir := "."
-	currentFiles := make(map[string]internal.File, 0)
+	currentFiles := make(map[string]storage.File, 0)
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func (i *Index) Refresh() error {
 			if err != nil {
 				return fmt.Errorf("could not calculate md5 of %s: %v", relPath, err)
 			}
-			currentFiles[relPath] = internal.File{
+			currentFiles[relPath] = storage.File{
 				Path:    relPath,
 				Updated: info.ModTime(),
 				Hash:    hash,
@@ -116,7 +116,6 @@ func (i *Index) summarizeFile(path string) (string, error) {
 	}
 
 	if len(content) > 10000 {
-		// Truncate or handle large files - this is a simple approach
 		content = content[:10000] // Take first 10K chars
 	}
 
