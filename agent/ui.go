@@ -126,9 +126,12 @@ func (ui *UI) captureInput(event *tcell.EventKey) *tcell.EventKey {
 			Type: TypeUser,
 			Body: input,
 		}
-		ui.conversation = append(ui.conversation, msg)
+		if !strings.HasPrefix(input, "/") {
+			ui.conversation = append(ui.conversation, msg)
+		}
 		ui.userInputPane.SetText("", true)
 		ui.out <- input
+		ui.redrawConversation()
 		return nil
 	case tcell.KeyPgUp:
 		ui.app.SetFocus(ui.conversationPane)
