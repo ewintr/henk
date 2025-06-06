@@ -35,9 +35,13 @@ func New(ctx context.Context, fileRepo internal.FileIndex, llmClient llm.LLM, to
 
 func (a *Agent) Run() error {
 	go a.converse()
-	// if err := a.index.Refresh(); err != nil {
-	// 	a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
-	// }
+
+	// ui sends signal when started
+	<-a.in
+
+	if err := a.index.Refresh(); err != nil {
+		a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
+	}
 
 	<-a.ctx.Done()
 	return nil
@@ -109,7 +113,9 @@ func (a *Agent) runCommand(input string) {
 	cmd = strings.TrimPrefix(cmd, "/")
 	switch cmd {
 	case "refresh":
-		// go a.index.Refresh()
+		if err := a.index.Refresh(); err != nil {
+			a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
+		}
 	case "quit":
 		a.out <- Message{Type: TypeExit}
 	}

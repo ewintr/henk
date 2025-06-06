@@ -81,9 +81,14 @@ func (i *Index) Refresh() error {
 		}
 	}
 
+	if len(needsUpdate) == 0 {
+		i.out <- Message{Type: TypeGeneral, Body: "nothing to index"}
+		return nil
+	}
+
 	i.out <- Message{
 		Type: TypeGeneral,
-		Body: fmt.Sprintf("indexing %d files...", len(needsUpdate)),
+		Body: fmt.Sprintf("indexing %d file(s)...", len(needsUpdate)),
 	}
 	for _, p := range needsUpdate {
 		curFile := currentFiles[p]
@@ -91,7 +96,6 @@ func (i *Index) Refresh() error {
 		if err != nil {
 			return fmt.Errorf("could not get summary for file %s: %v", p, err)
 		}
-		fmt.Println(summary)
 		curFile.Summary = summary
 		if err := i.fileRepo.Store(curFile); err != nil {
 			return fmt.Errorf("could not store file %s: %v", p, err)
@@ -100,7 +104,7 @@ func (i *Index) Refresh() error {
 	}
 	i.out <- Message{
 		Type: TypeGeneral,
-		Body: "indexing finished",
+		Body: fmt.Sprintf("indexed %d file(s)", len(needsUpdate)),
 	}
 	return nil
 }

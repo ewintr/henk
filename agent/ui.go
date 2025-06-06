@@ -58,6 +58,9 @@ func (ui *UI) Run() {
 	ui.buildLayout()
 	go ui.processInput()
 
+	// signal agent ui is ready
+	ui.out <- "ui ready"
+
 	if err := ui.app.Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
