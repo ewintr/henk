@@ -30,7 +30,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	llmClient := llm.NewClaude()
 	ui := agent.NewUI(cancel)
-	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo)}
+	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo), tool.NewFileSummary(fileRepo)}
 	h := agent.New(ctx, fileRepo, llmClient, tools, ui.In(), ui.Out())
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())

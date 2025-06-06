@@ -24,7 +24,7 @@ func NewReadFile() *ReadFile {
 
 func (rf *ReadFile) Name() string { return "read_file" }
 func (rf *ReadFile) Description() string {
-	return "Read the contents of a given relative file path, Use this when you want to see what's inside a file. Do not use this with directory names."
+	return "Read the contents of a given relative file path, Use this only when you really need to know in detail what is inside a file. This operation is costly, avoid unless absolutley necessary. Do not use this with directory names."
 }
 func (rf *ReadFile) InputSchema() anthropic.ToolInputSchemaParam {
 	return rf.inputSchema
