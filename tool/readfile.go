@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/invopop/jsonschema"
 )
 
 type ReadFileInput struct {
@@ -12,7 +12,7 @@ type ReadFileInput struct {
 }
 
 type ReadFile struct {
-	inputSchema anthropic.ToolInputSchemaParam
+	inputSchema *jsonschema.Schema
 }
 
 func NewReadFile() *ReadFile {
@@ -26,7 +26,7 @@ func (rf *ReadFile) Name() string { return "read_file" }
 func (rf *ReadFile) Description() string {
 	return "Read the contents of a given relative file path, Use this only when you really need to know in detail what is inside a file. This operation is costly, avoid unless absolutley necessary. Do not use this with directory names."
 }
-func (rf *ReadFile) InputSchema() anthropic.ToolInputSchemaParam {
+func (rf *ReadFile) InputSchema() *jsonschema.Schema {
 	return rf.inputSchema
 }
 

@@ -3,26 +3,21 @@ package tool
 import (
 	"encoding/json"
 
-	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/invopop/jsonschema"
 )
 
 type Tool interface {
 	Name() string
 	Description() string
-	InputSchema() anthropic.ToolInputSchemaParam
+	InputSchema() *jsonschema.Schema
 	Execute(input json.RawMessage) (string, error)
 }
 
-func GenerateSchema(t any) anthropic.ToolInputSchemaParam {
+func GenerateSchema(t any) *jsonschema.Schema {
 	reflector := jsonschema.Reflector{
 		AllowAdditionalProperties: false,
 		DoNotReference:            true,
 	}
 
-	schema := reflector.Reflect(t)
-
-	return anthropic.ToolInputSchemaParam{
-		Properties: schema.Properties,
-	}
+	return reflector.Reflect(t)
 }

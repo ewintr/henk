@@ -3,7 +3,7 @@ package tool
 import (
 	"encoding/json"
 
-	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/invopop/jsonschema"
 	"go-mod.ewintr.nl/henk/storage"
 )
 
@@ -12,7 +12,7 @@ type ListFilesInput struct {
 }
 
 type ListFiles struct {
-	inputSchema anthropic.ToolInputSchemaParam
+	inputSchema *jsonschema.Schema
 	fileRepo    storage.FileIndex
 }
 
@@ -28,7 +28,7 @@ func (lf *ListFiles) Name() string { return "list_files" }
 func (lf *ListFiles) Description() string {
 	return "List files and directories at a given path. If no path is provided, lists files in the current directory."
 }
-func (lf *ListFiles) InputSchema() anthropic.ToolInputSchemaParam {
+func (lf *ListFiles) InputSchema() *jsonschema.Schema {
 	return lf.inputSchema
 }
 

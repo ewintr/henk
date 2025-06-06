@@ -54,7 +54,9 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 			OfTool: &anthropic.ToolParam{
 				Name:        tool.Name(),
 				Description: anthropic.String(tool.Description()),
-				InputSchema: tool.InputSchema(),
+				InputSchema: anthropic.ToolInputSchemaParam{
+					Properties: tool.InputSchema().Properties,
+				},
 			},
 		})
 	}
@@ -68,7 +70,6 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 	if err != nil {
 		return Message{}, err
 	}
-	// return Message{}, fmt.Errorf("here...")
 
 	message := Message{
 		Role:    RoleAssistant,

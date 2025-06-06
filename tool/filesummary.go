@@ -3,7 +3,7 @@ package tool
 import (
 	"encoding/json"
 
-	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/invopop/jsonschema"
 	"go-mod.ewintr.nl/henk/storage"
 )
 
@@ -13,7 +13,7 @@ type FileSummaryInput struct {
 
 type FileSummary struct {
 	fileRepo    storage.FileIndex
-	inputSchema anthropic.ToolInputSchemaParam
+	inputSchema *jsonschema.Schema
 }
 
 func NewFileSummary(fileRepo storage.FileIndex) *FileSummary {
@@ -28,7 +28,7 @@ func (fs *FileSummary) Name() string { return "file_summary" }
 func (fs *FileSummary) Description() string {
 	return "Fetch a summary of the file contents. Use this if you want to understand on a high level what the content of a file is, but don't need any specific details yet. Do not use this with directory names."
 }
-func (fs *FileSummary) InputSchema() anthropic.ToolInputSchemaParam {
+func (fs *FileSummary) InputSchema() *jsonschema.Schema {
 	return fs.inputSchema
 }
 

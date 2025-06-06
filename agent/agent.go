@@ -36,7 +36,6 @@ func New(ctx context.Context, fileRepo storage.FileIndex, llmClient llm.LLM, too
 func (a *Agent) Run() error {
 	// ui sends signal when started
 	<-a.in
-
 	go a.converse()
 
 	if err := a.index.Refresh(false); err != nil {
