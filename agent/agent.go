@@ -38,9 +38,9 @@ func (a *Agent) Run() error {
 	<-a.in
 	go a.converse()
 
-	if err := a.index.Refresh(false); err != nil {
-		a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
-	}
+	// if err := a.index.Refresh(false); err != nil {
+	// 	a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
+	// }
 
 	<-a.ctx.Done()
 	return nil
