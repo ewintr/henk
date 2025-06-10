@@ -28,7 +28,9 @@ func main() {
 	fileRepo := storage.NewSqliteFile(db)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	llmClient := llm.NewClaude()
+	// llmClient := llm.NewClaude()
+	ollamaURL := "http://192.168.178.12:11434/v1"
+	llmClient := llm.NewOpenAI(ollamaURL)
 	ui := agent.NewUI(cancel)
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo), tool.NewFileSummary(fileRepo)}
 	h := agent.New(ctx, fileRepo, llmClient, tools, ui.In(), ui.Out())

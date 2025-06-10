@@ -19,6 +19,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/tview v0.0.0-20250501113434-0c592cd31026 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sashabaranov/go-openai v1.40.1 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
