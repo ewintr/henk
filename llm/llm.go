@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"go-mod.ewintr.nl/henk/tool"
 )
@@ -52,3 +53,44 @@ type Message struct {
 }
 
 type Conversation struct{}
+
+type Model struct {
+	Name    string `toml:"name"`
+	Default bool   `toml:"default"`
+}
+
+type Provider struct {
+	Type    string  `toml:"type"`
+	BaseURL string  `toml:"base_url"`
+	ApiKey  string  `toml:"api_key"`
+	Models  []Model `toml:"models"`
+}
+
+func (p Provider) DefaultModel() Model {
+	// Find default model
+	for _, model := range p.Models {
+		if model.Default {
+			return model
+		}
+	}
+
+	// If no default, return first model
+	if len(p.Models) > 0 {
+		return p.Models[0]
+	}
+
+	// Fallback
+	return Model{}
+}
+
+func NewLLM(provider Provider) (LLM, error) {
+	model := provider.DefaultModel()
+	switch provider.Type {
+	case "claude":
+		return NewClaude(model.Name), nil
+	case "openai":
+		return NewOpenAI(provider.BaseURL, model.Name), nil
+	default:
+		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
+	}
+}

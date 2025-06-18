@@ -11,14 +11,16 @@ import (
 
 type OpenAI struct {
 	client *openai.Client
+	model  string
 }
 
-func NewOpenAI(baseURL string) *OpenAI {
+func NewOpenAI(baseURL, model string) *OpenAI {
 	config := openai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
 	config.BaseURL = baseURL
 	c := openai.NewClientWithConfig(config)
 	return &OpenAI{
 		client: c,
+		model:  model,
 	}
 }
 
@@ -84,7 +86,7 @@ func (o *OpenAI) RunInference(ctx context.Context, tools []tool.Tool, conversati
 	}
 
 	req := openai.ChatCompletionRequest{
-		Model:    "qwen2.5-coder:32b",
+		Model:    o.model,
 		Messages: openaiConv,
 		Tools:    openaiTools,
 	}

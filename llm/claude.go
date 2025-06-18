@@ -11,12 +11,14 @@ import (
 
 type Claude struct {
 	client *anthropic.Client
+	model  string
 }
 
-func NewClaude() *Claude {
+func NewClaude(model string) *Claude {
 	c := anthropic.NewClient()
 	return &Claude{
 		client: &c,
+		model:  model,
 	}
 }
 
@@ -62,7 +64,7 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 	}
 
 	antMessage, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_7SonnetLatest,
+		Model:     anthropic.Model(c.model),
 		MaxTokens: int64(2048),
 		Messages:  antConv,
 		Tools:     antTools,

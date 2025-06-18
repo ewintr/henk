@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/BurntSushi/toml"
 	"go-mod.ewintr.nl/henk/agent"
 	"go-mod.ewintr.nl/henk/llm"
 	"go-mod.ewintr.nl/henk/storage"
@@ -20,6 +21,18 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	configPath := fmt.Sprintf("%s/config.toml", henkDir)
+	config, err := readConfig(configPath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := config.Validate(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	db, err := storage.NewSqlite(fmt.Sprintf("%s/henk.db", henkDir))
 	if err != nil {
 		fmt.Println(err)
@@ -28,9 +41,13 @@ func main() {
 	fileRepo := storage.NewSqliteFile(db)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	// llmClient := llm.NewClaude()
-	ollamaURL := "http://192.168.178.12:11434/v1"
-	llmClient := llm.NewOpenAI(ollamaURL)
+
+	llmClient, err := llm.NewLLM(config.Provider())
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	ui := agent.NewUI(cancel)
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo), tool.NewFileSummary(fileRepo)}
 	h := agent.New(ctx, fileRepo, llmClient, tools, ui.In(), ui.Out())
@@ -53,4 +70,14 @@ func setupDir(path string) error {
 	}
 
 	return nil
+}
+
+func readConfig(path string) (Config, error) {
+	var config Config
+	_, err := toml.DecodeFile(path, &config)
+	if err != nil {
+		return Config{}, fmt.Errorf("could not read config file: %v", err)
+	}
+
+	return config, nil
 }
