@@ -15,7 +15,7 @@ type Agent struct {
 	tools     []tool.Tool
 	out       chan Message
 	in        chan string
-	done      chan bool
+	done      bool
 	ctx       context.Context
 }
 
@@ -25,7 +25,6 @@ func New(ctx context.Context, llmClient llm.LLM, tools []tool.Tool, out chan Mes
 		tools:     tools,
 		out:       out,
 		in:        in,
-		done:      make(chan bool),
 		ctx:       ctx,
 	}
 }
@@ -50,7 +49,11 @@ func (a *Agent) converse() error {
 
 	readUserInput := true
 	for {
+		if a.done {
+			return nil
+		}
 		if readUserInput {
+			a.out <- Message{Type: TypePrompt}
 			userInput := <-a.in
 			if strings.HasPrefix(userInput, "/") {
 				a.runCommand(userInput)
@@ -105,6 +108,7 @@ func (a *Agent) runCommand(input string) {
 	cmd = strings.TrimPrefix(cmd, "/")
 	switch cmd {
 	case "quit":
+		a.done = true
 		a.out <- Message{Type: TypeExit}
 	}
 }

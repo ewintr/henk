@@ -1,13 +1,11 @@
 package agent
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 )
 
 type MessageType string
@@ -29,19 +27,14 @@ type Message struct {
 }
 
 type UI struct {
-	app              *tview.Application
-	userInputPane    *tview.TextArea
-	conversationPane *tview.TextView
-	statusPane       *tview.TextView
-	conversation     []Message
-	in               chan Message
-	out              chan string
-	cancel           context.CancelFunc
+	conversation []Message
+	in           chan Message
+	out          chan string
+	cancel       context.CancelFunc
 }
 
 func NewUI(cancel context.CancelFunc) *UI {
 	ui := &UI{
-		app:    tview.NewApplication(),
 		in:     make(chan Message),
 		out:    make(chan string),
 		cancel: cancel,
@@ -55,108 +48,66 @@ func (ui *UI) In() chan Message { return ui.in }
 func (ui *UI) Out() chan string { return ui.out }
 
 func (ui *UI) Run() {
-	ui.buildLayout()
 	go ui.processInput()
-
-	// signal agent ui is ready
 	ui.out <- "ui ready"
 
-	if err := ui.app.Run(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
+	ui.captureInput()
 }
 
 func (ui *UI) processInput() {
 	for msg := range ui.in {
 		switch msg.Type {
 		case TypeGeneral:
-			ui.statusPane.SetText(msg.Body)
+			fmt.Printf("\033[37mStatus: %s\033[0m\n", msg.Body)
 		case TypeHenk:
 			ui.conversation = append(ui.conversation, msg)
-			ui.redrawConversation()
+			fmt.Printf("\033[32mHenk: %s\033[0m\n", msg.Body)
+		case TypePrompt:
+			fmt.Printf("> ")
+		case TypeUser:
+			fmt.Printf("\033[34mYou: %s\033[0m\n", msg.Body)
 		case TypeTool:
-			ui.statusPane.SetText(fmt.Sprintf("tool: %s", msg.Body))
+			fmt.Printf("\033[33mTool: %s\033[0m\n", msg.Body)
 		case TypeError:
-			ui.statusPane.SetText(fmt.Sprintf("error: %s", msg.Body))
+			fmt.Printf("\033[31mError: %s\033[0m\n", msg.Body)
 		case TypeDebug:
-			ui.statusPane.SetText(fmt.Sprintf("debug: %s", msg.Body))
+			fmt.Printf("\033[90mDebug: %s\033[0m\n", msg.Body)
 		case TypeExit:
 			ui.Close()
 		}
-		ui.app.Draw()
 	}
-
 }
 
 func (ui *UI) Close() {
-	ui.app.Stop()
 	ui.cancel()
 	close(ui.in)
 	close(ui.out)
 }
 
-func (ui *UI) buildLayout() {
-	ui.userInputPane = tview.NewTextArea()
-	ui.userInputPane.SetBorder(true)
+func (ui *UI) captureInput() {
+	scanner := bufio.NewScanner(os.Stdin)
 
-	ui.conversationPane = tview.NewTextView().
-		SetDynamicColors(true)
-	ui.statusPane = tview.NewTextView().SetText("status")
-	layout := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(ui.conversationPane, 0, 1, false).
-		AddItem(ui.userInputPane, 10, 0, true).
-		AddItem(ui.statusPane, 1, 0, false)
-
-	ui.app.SetRoot(layout, true).
-		SetInputCapture(ui.captureInput).
-		EnableMouse(true)
-}
-
-func (ui *UI) captureInput(event *tcell.EventKey) *tcell.EventKey {
-	switch event.Key() {
-	case tcell.KeyEnter:
-		input := ui.userInputPane.GetText()
+	for scanner.Scan() {
+		input := strings.TrimSpace(scanner.Text())
 		if input == "" {
-			return nil
+			continue
 		}
-		msg := Message{
-			Type: TypeUser,
-			Body: input,
-		}
+
+		// Add user message to conversation if not a command
 		if !strings.HasPrefix(input, "/") {
+			msg := Message{
+				Type: TypeUser,
+				Body: input,
+			}
 			ui.conversation = append(ui.conversation, msg)
 		}
-		ui.userInputPane.SetText("", true)
-		ui.out <- input
-		ui.redrawConversation()
-		return nil
-	case tcell.KeyPgUp:
-		ui.app.SetFocus(ui.conversationPane)
-		return tcell.NewEventKey(tcell.KeyCtrlB, 'b', tcell.ModCtrl)
-	case tcell.KeyPgDn:
-		ui.app.SetFocus(ui.conversationPane)
-		return tcell.NewEventKey(tcell.KeyCtrlF, 'f', tcell.ModCtrl)
-	case tcell.KeyCtrlC:
-		ui.out <- "/quit"
-		return nil
-	default:
-		ui.app.SetFocus(ui.userInputPane)
-		return event
-	}
-}
 
-func (ui *UI) redrawConversation() {
-	text := make([]string, 0, len(ui.conversation))
-	for _, msg := range ui.conversation {
-		name, color := "Henk", "green"
-		if msg.Type == TypeUser {
-			name, color = "You", "blue"
-		}
-		text = append(text, fmt.Sprintf("[%s]%s[white] %s", color, name, msg.Body))
+		// Send input to agent
+		ui.out <- input
+
 	}
-	ui.conversationPane.SetText(strings.Join(text, "\n")).
-		ScrollToEnd()
+
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("Error reading input: %v\n", err)
+	}
 }
