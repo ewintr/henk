@@ -8,7 +8,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"go-mod.ewintr.nl/henk/agent"
 	"go-mod.ewintr.nl/henk/llm"
-	"go-mod.ewintr.nl/henk/storage"
 	"go-mod.ewintr.nl/henk/tool"
 )
 
@@ -33,13 +32,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := storage.NewSqlite(fmt.Sprintf("%s/henk.db", henkDir))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	fileRepo := storage.NewSqliteFile(db)
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	llmClient, err := llm.NewLLM(config.Provider())
@@ -49,8 +41,8 @@ func main() {
 	}
 
 	ui := agent.NewUI(cancel)
-	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles(fileRepo), tool.NewFileSummary(fileRepo)}
-	h := agent.New(ctx, fileRepo, llmClient, tools, ui.In(), ui.Out())
+	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles()}
+	h := agent.New(ctx, llmClient, tools, ui.In(), ui.Out())
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}

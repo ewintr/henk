@@ -2,9 +2,10 @@ package tool
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 
 	"github.com/invopop/jsonschema"
-	"go-mod.ewintr.nl/henk/storage"
 )
 
 type ListFilesInput struct {
@@ -13,14 +14,12 @@ type ListFilesInput struct {
 
 type ListFiles struct {
 	inputSchema *jsonschema.Schema
-	fileRepo    storage.FileIndex
 }
 
-func NewListFiles(fileRepo storage.FileIndex) *ListFiles {
+func NewListFiles() *ListFiles {
 	var schema ListFilesInput
 	return &ListFiles{
 		inputSchema: GenerateSchema(schema),
-		fileRepo:    fileRepo,
 	}
 }
 
@@ -33,11 +32,41 @@ func (lf *ListFiles) InputSchema() *jsonschema.Schema {
 }
 
 func (lf *ListFiles) Execute(input json.RawMessage) (string, error) {
-	list, err := lf.fileRepo.ListPaths()
-	if err != nil {
+	var listFilesInput ListFilesInput
+	if err := json.Unmarshal(input, &listFilesInput); err != nil {
 		return "", err
 	}
-	result, err := json.Marshal(list)
+
+	dir := "."
+	if listFilesInput.Path != "" {
+		dir = listFilesInput.Path
+	}
+
+	var files []string
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		if relPath != "." {
+			if info.IsDir() {
+				files = append(files, relPath+"/")
+			} else {
+				files = append(files, relPath)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return "", err
+	}
+
+	result, err := json.Marshal(files)
 	if err != nil {
 		return "", err
 	}

@@ -7,25 +7,22 @@ import (
 	"strings"
 
 	"go-mod.ewintr.nl/henk/llm"
-	"go-mod.ewintr.nl/henk/storage"
 	"go-mod.ewintr.nl/henk/tool"
 )
 
 type Agent struct {
 	llmClient llm.LLM
 	tools     []tool.Tool
-	index     *Index
 	out       chan Message
 	in        chan string
 	done      chan bool
 	ctx       context.Context
 }
 
-func New(ctx context.Context, fileRepo storage.FileIndex, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
+func New(ctx context.Context, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
 	return &Agent{
 		llmClient: llmClient,
 		tools:     tools,
-		index:     NewIndex(fileRepo, llmClient, out),
 		out:       out,
 		in:        in,
 		done:      make(chan bool),
@@ -37,10 +34,6 @@ func (a *Agent) Run() error {
 	// ui sends signal when started
 	<-a.in
 	go a.converse()
-
-	// if err := a.index.Refresh(false); err != nil {
-	// 	a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
-	// }
 
 	<-a.ctx.Done()
 	return nil
@@ -111,14 +104,6 @@ func (a *Agent) runCommand(input string) {
 	cmd, _, _ := strings.Cut(input, " ")
 	cmd = strings.TrimPrefix(cmd, "/")
 	switch cmd {
-	case "refresh":
-		if err := a.index.Refresh(false); err != nil {
-			a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
-		}
-	case "refreshall":
-		if err := a.index.Refresh(true); err != nil {
-			a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not refresh index: %v", err)}
-		}
 	case "quit":
 		a.out <- Message{Type: TypeExit}
 	}
