@@ -1,11 +1,13 @@
 package agent
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
+	"time"
+
+	"github.com/briandowns/spinner"
+	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/huh"
 )
 
 type MessageType string
@@ -31,15 +33,20 @@ type UI struct {
 	in           chan Message
 	out          chan string
 	cancel       context.CancelFunc
+	spinner      *spinner.Spinner
 }
 
 func NewUI(cancel context.CancelFunc) *UI {
+	sp := spinner.New([]string{"  .  ", "  .. ", "  ..."}, 500*time.Millisecond)
+	sp.FinalMSG = ""
+
 	ui := &UI{
-		in:     make(chan Message),
-		out:    make(chan string),
-		cancel: cancel,
+		in:      make(chan Message),
+		out:     make(chan string),
+		cancel:  cancel,
+		spinner: sp,
 	}
-	go ui.Run()
+	go ui.run()
 
 	return ui
 }
@@ -47,33 +54,51 @@ func NewUI(cancel context.CancelFunc) *UI {
 func (ui *UI) In() chan Message { return ui.in }
 func (ui *UI) Out() chan string { return ui.out }
 
-func (ui *UI) Run() {
-	go ui.processInput()
+func (ui *UI) run() {
 	ui.out <- "ui ready"
-
-	ui.captureInput()
-}
-
-func (ui *UI) processInput() {
 	for msg := range ui.in {
+		if msg.Type == TypePrompt {
+			var result string
+			huh.NewText().
+				CharLimit(400).
+				Value(&result).
+				Run()
+			ui.out <- result
+			msg = Message{Type: TypeUser, Body: result}
+		}
+
+		var who string
 		switch msg.Type {
 		case TypeGeneral:
-			fmt.Printf("\033[37mStatus: %s\033[0m\n", msg.Body)
+			who = "Status"
 		case TypeHenk:
 			ui.conversation = append(ui.conversation, msg)
-			fmt.Printf("\033[32mHenk: %s\033[0m\n", msg.Body)
-		case TypePrompt:
-			fmt.Printf("> ")
+			who = "Henk"
 		case TypeUser:
-			fmt.Printf("\033[34mYou: %s\033[0m\n", msg.Body)
+			who = "You"
 		case TypeTool:
-			fmt.Printf("\033[33mTool: %s\033[0m\n", msg.Body)
+			who = "Tool"
 		case TypeError:
-			fmt.Printf("\033[31mError: %s\033[0m\n", msg.Body)
+			who = "Error"
 		case TypeDebug:
-			fmt.Printf("\033[90mDebug: %s\033[0m\n", msg.Body)
+			who = "Debug"
 		case TypeExit:
 			ui.Close()
+			return
+		}
+
+		if msg.Type != TypeUser {
+			ui.spinner.Stop()
+		}
+		in := fmt.Sprintf("**%s**: %s", who, msg.Body)
+		out, err := glamour.Render(in, "dark")
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Print(out)
+
+		if msg.Type == TypeUser {
+			ui.spinner.Start()
 		}
 	}
 }
@@ -82,32 +107,4 @@ func (ui *UI) Close() {
 	ui.cancel()
 	close(ui.in)
 	close(ui.out)
-}
-
-func (ui *UI) captureInput() {
-	scanner := bufio.NewScanner(os.Stdin)
-
-	for scanner.Scan() {
-		input := strings.TrimSpace(scanner.Text())
-		if input == "" {
-			continue
-		}
-
-		// Add user message to conversation if not a command
-		if !strings.HasPrefix(input, "/") {
-			msg := Message{
-				Type: TypeUser,
-				Body: input,
-			}
-			ui.conversation = append(ui.conversation, msg)
-		}
-
-		// Send input to agent
-		ui.out <- input
-
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading input: %v\n", err)
-	}
 }
