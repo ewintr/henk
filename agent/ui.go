@@ -57,6 +57,8 @@ func (ui *UI) Out() chan string { return ui.out }
 func (ui *UI) run() {
 	ui.out <- "ui ready"
 	for msg := range ui.in {
+		ui.spinner.Stop()
+
 		if msg.Type == TypePrompt {
 			var result string
 			huh.NewText().
@@ -87,9 +89,6 @@ func (ui *UI) run() {
 			return
 		}
 
-		if msg.Type != TypeUser {
-			ui.spinner.Stop()
-		}
 		in := fmt.Sprintf("**%s**: %s", who, msg.Body)
 		out, err := glamour.Render(in, "dark")
 		if err != nil {
@@ -97,13 +96,14 @@ func (ui *UI) run() {
 		}
 		fmt.Print(out)
 
-		if msg.Type == TypeUser {
-			ui.spinner.Start()
-		}
+		ui.spinner.Start()
 	}
 }
 
 func (ui *UI) Close() {
+	if ui.spinner.Active() {
+		ui.spinner.Stop()
+	}
 	ui.cancel()
 	close(ui.in)
 	close(ui.out)
