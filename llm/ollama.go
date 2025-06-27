@@ -145,7 +145,7 @@ func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversati
 		Tools:    ollamaTools,
 		Stream:   false,
 		Options: ollamaChatRequestOptions{
-			NumCtx: 30000,
+			NumCtx: 16384,
 		},
 	}
 
