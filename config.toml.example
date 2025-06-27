@@ -28,8 +28,11 @@ base_url = "http://192.168.178.12:11434/v1"
   name = "mistral:7b"
 
 [[providers]]
-type = "openai"
-base_url = "http://localhost:1234/v1"
+type = "ollama"
+base_url = "http://localhost:11434"
 
   [[providers.models]]
-  name = "local-model"
+  name = "llama3.1:8b"
+
+  [[providers.models]]
+  name = "mistral:7b"

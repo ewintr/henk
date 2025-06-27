@@ -90,6 +90,8 @@ func NewLLM(provider Provider) (LLM, error) {
 		return NewClaude(model.Name), nil
 	case "openai":
 		return NewOpenAI(provider.BaseURL, model.Name), nil
+	case "ollama":
+		return NewOllama(provider.BaseURL, model.Name), nil
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
 	}
