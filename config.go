@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+
 	"go-mod.ewintr.nl/henk/llm"
 )
 
 type Config struct {
-	Providers []llm.Provider `toml:"providers"`
+	Providers    []llm.Provider `toml:"providers"`
+	SystemPrompt string         `toml:"system_prompt"`
 }
 
 func (c Config) Validate() error {

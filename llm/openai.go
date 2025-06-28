@@ -9,22 +9,28 @@ import (
 )
 
 type OpenAI struct {
-	client *openai.Client
-	model  string
+	client       *openai.Client
+	model        string
+	systemPrompt string
 }
 
-func NewOpenAI(baseURL, apiKey, model string) *OpenAI {
+func NewOpenAI(baseURL, apiKey, model, systemPrompt string) *OpenAI {
 	config := openai.DefaultConfig(apiKey)
 	config.BaseURL = baseURL
 	c := openai.NewClientWithConfig(config)
 	return &OpenAI{
-		client: c,
-		model:  model,
+		client:       c,
+		model:        model,
+		systemPrompt: systemPrompt,
 	}
 }
 
 func (o *OpenAI) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
-	openaiConv := make([]openai.ChatCompletionMessage, 0, len(conversation))
+	openaiConv := make([]openai.ChatCompletionMessage, 0, len(conversation)+1)
+	openaiConv = append(openaiConv, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: o.systemPrompt,
+	})
 	for _, msg := range conversation {
 		for _, block := range msg.Content {
 			var openaiMsg openai.ChatCompletionMessage

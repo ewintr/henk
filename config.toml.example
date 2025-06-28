@@ -1,6 +1,8 @@
 # Example configuration file for henk
 # Copy this file to .henk/config.toml and modify as needed
 
+system_prompt = "You are a helpful assistent. Be concise and accurate in your responses."
+
 # Multiple providers can be configured
 # If no model is marked as default, the first model from the first provider will be used
 [[providers]]

@@ -34,7 +34,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	llmClient, err := llm.NewLLM(config.Provider())
+	llmClient, err := llm.NewLLM(config.Provider(), config.SystemPrompt)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

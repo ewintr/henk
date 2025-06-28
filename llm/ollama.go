@@ -13,21 +13,23 @@ import (
 )
 
 type Ollama struct {
-	baseURL     string
-	model       string
-	contextSize int
-	client      *http.Client
+	baseURL      string
+	model        string
+	systemPrompt string
+	contextSize  int
+	client       *http.Client
 }
 
-func NewOllama(baseURL, model string, contextSize int) *Ollama {
+func NewOllama(baseURL, model, systemPrompt string, contextSize int) *Ollama {
 	if baseURL == "" {
 		baseURL = "http://localhost:11434"
 	}
 	return &Ollama{
-		baseURL:     baseURL,
-		model:       model,
-		contextSize: contextSize,
-		client:      &http.Client{},
+		baseURL:      baseURL,
+		model:        model,
+		systemPrompt: systemPrompt,
+		contextSize:  contextSize,
+		client:       &http.Client{},
 	}
 }
 
@@ -82,7 +84,11 @@ type ollamaResponseMessage struct {
 
 func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
 	// Convert internal messages to Ollama format
-	ollamaMessages := make([]ollamaMessage, 0)
+	ollamaMessages := make([]ollamaMessage, 0, len(conversation)+1)
+	ollamaMessages = append(ollamaMessages, ollamaMessage{
+		Role:    "system",
+		Content: o.systemPrompt,
+	})
 
 	for _, msg := range conversation {
 		if msg.Role == RoleUser || msg.Role == RoleAssistant {

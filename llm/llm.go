@@ -89,11 +89,11 @@ func (p Provider) DefaultModel() Model {
 	return m
 }
 
-func NewLLM(provider Provider) (LLM, error) {
+func NewLLM(provider Provider, systemPrompt string) (LLM, error) {
 	model := provider.DefaultModel()
 	switch provider.Type {
 	case "claude":
-		return NewClaude(model.Name), nil
+		return NewClaude(model.Name, systemPrompt), nil
 	case "openai":
 		var apiKey string
 		if provider.ApiKeyEnv != "" {
@@ -102,9 +102,9 @@ func NewLLM(provider Provider) (LLM, error) {
 				apiKey = val
 			}
 		}
-		return NewOpenAI(provider.BaseURL, apiKey, model.Name), nil
+		return NewOpenAI(provider.BaseURL, apiKey, model.Name, systemPrompt), nil
 	case "ollama":
-		return NewOllama(provider.BaseURL, model.Name, model.ContextSize), nil
+		return NewOllama(provider.BaseURL, model.Name, systemPrompt, model.ContextSize), nil
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
 	}
