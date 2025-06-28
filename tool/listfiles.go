@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/invopop/jsonschema"
 )
@@ -54,6 +55,12 @@ func (lf *ListFiles) Execute(input json.RawMessage) (string, error) {
 		}
 
 		if relPath != "." {
+			if strings.HasPrefix(filepath.Base(relPath), ".") {
+				if info.IsDir() {
+					return filepath.SkipDir // Skip the hidden directory
+				}
+				return nil // Skip hidden files
+			}
 			if info.IsDir() {
 				files = append(files, relPath+"/")
 			} else {
