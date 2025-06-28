@@ -13,19 +13,21 @@ import (
 )
 
 type Ollama struct {
-	baseURL string
-	model   string
-	client  *http.Client
+	baseURL     string
+	model       string
+	contextSize int
+	client      *http.Client
 }
 
-func NewOllama(baseURL, model string) *Ollama {
+func NewOllama(baseURL, model string, contextSize int) *Ollama {
 	if baseURL == "" {
 		baseURL = "http://localhost:11434"
 	}
 	return &Ollama{
-		baseURL: baseURL,
-		model:   model,
-		client:  &http.Client{},
+		baseURL:     baseURL,
+		model:       model,
+		contextSize: contextSize,
+		client:      &http.Client{},
 	}
 }
 
@@ -143,9 +145,8 @@ func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversati
 		Model:    o.model,
 		Messages: ollamaMessages,
 		Tools:    ollamaTools,
-		Stream:   false,
 		Options: ollamaChatRequestOptions{
-			NumCtx: 16384,
+			NumCtx: o.contextSize,
 		},
 	}
 

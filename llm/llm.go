@@ -55,8 +55,9 @@ type Message struct {
 type Conversation struct{}
 
 type Model struct {
-	Name    string `toml:"name"`
-	Default bool   `toml:"default"`
+	Name        string `toml:"name"`
+	Default     bool   `toml:"default"`
+	ContextSize int    `toml:"context_size"`
 }
 
 type Provider struct {
@@ -67,20 +68,24 @@ type Provider struct {
 }
 
 func (p Provider) DefaultModel() Model {
+	var m Model
 	// Find default model
 	for _, model := range p.Models {
 		if model.Default {
-			return model
+			m = model
 		}
 	}
 
 	// If no default, return first model
-	if len(p.Models) > 0 {
-		return p.Models[0]
+	if m.Name == "" && len(p.Models) > 0 {
+		m = p.Models[0]
 	}
 
-	// Fallback
-	return Model{}
+	if m.ContextSize == 0 {
+		m.ContextSize = 8096
+	}
+
+	return m
 }
 
 func NewLLM(provider Provider) (LLM, error) {
@@ -91,7 +96,7 @@ func NewLLM(provider Provider) (LLM, error) {
 	case "openai":
 		return NewOpenAI(provider.BaseURL, model.Name), nil
 	case "ollama":
-		return NewOllama(provider.BaseURL, model.Name), nil
+		return NewOllama(provider.BaseURL, model.Name, model.ContextSize), nil
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
 	}
