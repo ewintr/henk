@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"go-mod.ewintr.nl/henk/tool"
 )
@@ -61,10 +62,10 @@ type Model struct {
 }
 
 type Provider struct {
-	Type    string  `toml:"type"`
-	BaseURL string  `toml:"base_url"`
-	ApiKey  string  `toml:"api_key"`
-	Models  []Model `toml:"models"`
+	Type      string  `toml:"type"`
+	BaseURL   string  `toml:"base_url"`
+	ApiKeyEnv string  `toml:"api_key_env"`
+	Models    []Model `toml:"models"`
 }
 
 func (p Provider) DefaultModel() Model {
@@ -94,7 +95,14 @@ func NewLLM(provider Provider) (LLM, error) {
 	case "claude":
 		return NewClaude(model.Name), nil
 	case "openai":
-		return NewOpenAI(provider.BaseURL, model.Name), nil
+		var apiKey string
+		if provider.ApiKeyEnv != "" {
+			val, ok := os.LookupEnv(provider.ApiKeyEnv)
+			if ok {
+				apiKey = val
+			}
+		}
+		return NewOpenAI(provider.BaseURL, apiKey, model.Name), nil
 	case "ollama":
 		return NewOllama(provider.BaseURL, model.Name, model.ContextSize), nil
 	default:

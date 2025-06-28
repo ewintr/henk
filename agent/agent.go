@@ -84,6 +84,13 @@ func (a *Agent) converse() error {
 				a.out <- Message{Type: TypeHenk, Body: content.Text}
 			case "tool_use":
 				toolResult := a.executeTool(content.ToolUse.ID, content.ToolUse.Name, content.ToolUse.Input)
+				if toolResult.Error {
+					a.out <- Message{
+						Type: TypeError,
+						Body: fmt.Sprintf("tool returned error, not adding to the conversation: %v", toolResult.Result),
+					}
+					continue
+				}
 				toolResults = append(toolResults, llm.Message{
 					Role: llm.RoleUser,
 					Content: []llm.ContentBlock{{

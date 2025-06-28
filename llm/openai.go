@@ -3,7 +3,6 @@ package llm
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/sashabaranov/go-openai"
 	"go-mod.ewintr.nl/henk/tool"
@@ -14,8 +13,8 @@ type OpenAI struct {
 	model  string
 }
 
-func NewOpenAI(baseURL, model string) *OpenAI {
-	config := openai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
+func NewOpenAI(baseURL, apiKey, model string) *OpenAI {
+	config := openai.DefaultConfig(apiKey)
 	config.BaseURL = baseURL
 	c := openai.NewClientWithConfig(config)
 	return &OpenAI{

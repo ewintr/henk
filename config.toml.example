@@ -5,8 +5,6 @@
 # If no model is marked as default, the first model from the first provider will be used
 [[providers]]
 type = "claude"
-# Optional: API key (if required by the service)
-# api_key = "your-api-key-here"
 
   [[providers.models]]
   name = "claude-3-5-sonnet"
@@ -18,7 +16,7 @@ type = "claude"
 type = "openai"
 base_url = "http://192.168.178.12:11434/v1"
 # Optional: API key (if required by the service)
-# api_key = "your-api-key-here"
+api_key_env = "OPENROUTER_API_KEY"
 
   [[providers.models]]
   name = "llama3.1:8b"
@@ -33,6 +31,7 @@ base_url = "http://localhost:11434"
 
   [[providers.models]]
   name = "llama3.1:8b"
+  context_size = 32000 # default is 8096
 
   [[providers.models]]
   name = "mistral:7b"

@@ -9,7 +9,7 @@ import (
 )
 
 type ListFilesInput struct {
-	Path string `json:"path,omitempty" jsonschema_description:"Optional relative path to list files from. Defaults to current directory if not provided."`
+	Path string `json:"path" jsonschema_description:"Relative path to list files from. Use \".\" for the current working directory."`
 }
 
 type ListFiles struct {
@@ -25,7 +25,7 @@ func NewListFiles() *ListFiles {
 
 func (lf *ListFiles) Name() string { return "list_files" }
 func (lf *ListFiles) Description() string {
-	return "List files and directories at a given path. If no path is provided, lists files in the current directory."
+	return "List files and directories at a given path. Use \".\" for the current working directory."
 }
 func (lf *ListFiles) InputSchema() *jsonschema.Schema {
 	return lf.inputSchema
