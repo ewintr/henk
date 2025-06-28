@@ -71,5 +71,10 @@ func readConfig(path string) (Config, error) {
 		return Config{}, fmt.Errorf("could not read config file: %v", err)
 	}
 
+	// default values
+	if config.SystemPrompt == "" {
+		config.SystemPrompt = "You are a helpful assistent. Be concise and accurate in your responses."
+	}
+
 	return config, nil
 }
