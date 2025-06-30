@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"go-mod.ewintr.nl/henk/llm"
 )
 
@@ -57,4 +61,49 @@ func (c Config) Provider() llm.Provider {
 
 	// Fallback (should not happen if Validate() passed)
 	return llm.Provider{}
+}
+
+func setupDir(path string) error {
+	info, err := os.Stat(path)
+	switch {
+	case os.IsNotExist(err):
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return err
+		}
+	case err != nil:
+		return err
+	case !info.IsDir():
+		return fmt.Errorf("%s exists, but is not a directory", path)
+	}
+
+	return nil
+}
+
+func readConfig() (Config, error) {
+	userConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	configDir := filepath.Join(userConfigDir, "henk")
+	if err := setupDir(configDir); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := setupDir(configDir); err != nil {
+		return Config{}, fmt.Errorf("could not create config dir: %v", err)
+	}
+	configPath := filepath.Join(configDir, "config.toml")
+
+	var config Config
+	_, err = toml.DecodeFile(configPath, &config)
+	if err != nil {
+		return Config{}, fmt.Errorf("could not read config file: %v", err)
+	}
+
+	// default values
+	if config.SystemPrompt == "" {
+		config.SystemPrompt = "You are a helpful assistent. Be concise and accurate in your responses."
+	}
+
+	return config, nil
 }
