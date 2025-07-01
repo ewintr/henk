@@ -1,13 +1,12 @@
-package main
+package agent
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"go-mod.ewintr.nl/henk/llm"
+	"go-mod.ewintr.nl/henk/agent/llm"
 )
 
 type Config struct {
@@ -59,7 +58,6 @@ func (c Config) Provider() llm.Provider {
 		return c.Providers[0]
 	}
 
-	// Fallback (should not happen if Validate() passed)
 	return llm.Provider{}
 }
 
@@ -79,15 +77,14 @@ func setupDir(path string) error {
 	return nil
 }
 
-func readConfig() (Config, error) {
+func ReadConfig() (Config, error) {
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
-		log.Fatal(err)
+		return Config{}, fmt.Errorf("could not find user config dir: %v", err)
 	}
 	configDir := filepath.Join(userConfigDir, "henk")
 	if err := setupDir(configDir); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return Config{}, err
 	}
 	if err := setupDir(configDir); err != nil {
 		return Config{}, fmt.Errorf("could not create config dir: %v", err)

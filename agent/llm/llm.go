@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"go-mod.ewintr.nl/henk/tool"
+	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 type LLM interface {
@@ -57,6 +57,7 @@ type Conversation struct{}
 
 type Model struct {
 	Name        string `toml:"name"`
+	ShortName   string `toml:"short_name"`
 	Default     bool   `toml:"default"`
 	ContextSize int    `toml:"context_size"`
 }
@@ -65,6 +66,7 @@ type Provider struct {
 	Type      string  `toml:"type"`
 	BaseURL   string  `toml:"base_url"`
 	ApiKeyEnv string  `toml:"api_key_env"`
+	Name      string  `toml:"name"`
 	Models    []Model `toml:"models"`
 }
 

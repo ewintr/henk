@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"go-mod.ewintr.nl/henk/agent"
-	"go-mod.ewintr.nl/henk/llm"
-	"go-mod.ewintr.nl/henk/tool"
+	"go-mod.ewintr.nl/henk/agent/llm"
+	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 func main() {
-	config, err := readConfig()
+	config, err := agent.ReadConfig()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -31,7 +31,7 @@ func main() {
 
 	ui := agent.NewUI(cancel)
 	tools := []tool.Tool{tool.NewReadFile(), tool.NewListFiles()}
-	h := agent.New(ctx, llmClient, tools, ui.In(), ui.Out())
+	h := agent.New(ctx, config, llmClient, tools, ui.In(), ui.Out())
 	if err := h.Run(); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}

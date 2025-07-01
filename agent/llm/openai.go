@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sashabaranov/go-openai"
-	"go-mod.ewintr.nl/henk/tool"
+	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 type OpenAI struct {

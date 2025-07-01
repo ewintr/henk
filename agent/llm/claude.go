@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"go-mod.ewintr.nl/henk/tool"
+	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 type Claude struct {

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go-mod.ewintr.nl/henk/tool"
+	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 type Ollama struct {

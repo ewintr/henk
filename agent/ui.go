@@ -72,7 +72,7 @@ func (ui *UI) run() {
 		var who string
 		switch msg.Type {
 		case TypeGeneral:
-			who = "Status"
+			who = "Agent"
 		case TypeHenk:
 			ui.conversation = append(ui.conversation, msg)
 			who = "Henk"

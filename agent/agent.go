@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"go-mod.ewintr.nl/henk/llm"
-	"go-mod.ewintr.nl/henk/tool"
+	"go-mod.ewintr.nl/henk/agent/llm"
+	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 type Agent struct {
+	config    Config
 	llmClient llm.LLM
 	tools     []tool.Tool
 	out       chan Message
@@ -19,8 +20,9 @@ type Agent struct {
 	ctx       context.Context
 }
 
-func New(ctx context.Context, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
+func New(ctx context.Context, config Config, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
 	return &Agent{
+		config:    config,
 		llmClient: llmClient,
 		tools:     tools,
 		out:       out,
@@ -117,6 +119,8 @@ func (a *Agent) runCommand(input string) {
 	case "quit":
 		a.done = true
 		a.out <- Message{Type: TypeExit}
+	case "models":
+		a.listModels()
 	}
 }
 
