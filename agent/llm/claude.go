@@ -11,17 +11,23 @@ import (
 
 type Claude struct {
 	client       *anthropic.Client
-	model        string
+	provider     Provider
+	modelName    string
 	systemPrompt string
 }
 
-func NewClaude(model, systemPrompt string) *Claude {
+func NewClaude(provider Provider, modelName, systemPrompt string) *Claude {
 	c := anthropic.NewClient()
 	return &Claude{
 		client:       &c,
-		model:        model,
+		provider:     provider,
+		modelName:    modelName,
 		systemPrompt: systemPrompt,
 	}
+}
+
+func (c *Claude) ModelInfo() (string, string) {
+	return c.provider.Name, c.modelName
 }
 
 func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
@@ -68,7 +74,7 @@ func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversati
 	antSystem := []anthropic.TextBlockParam{{Text: c.systemPrompt}}
 
 	antMessage, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.Model(c.model),
+		Model:     anthropic.Model(c.modelName),
 		MaxTokens: int64(2048),
 		Messages:  antConv,
 		Tools:     antTools,

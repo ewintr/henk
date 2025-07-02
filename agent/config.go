@@ -61,6 +61,43 @@ func (c Config) Provider() llm.Provider {
 	return llm.Provider{}
 }
 
+func ReadConfig() (Config, error) {
+	userConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		return Config{}, fmt.Errorf("could not find user config dir: %v", err)
+	}
+	configDir := filepath.Join(userConfigDir, "henk")
+	if err := setupDir(configDir); err != nil {
+		return Config{}, fmt.Errorf("could not create config dir: %v", err)
+	}
+	configPath := filepath.Join(configDir, "config.toml")
+
+	var config Config
+	_, err = toml.DecodeFile(configPath, &config)
+	if err != nil {
+		return Config{}, fmt.Errorf("could not read config file: %v", err)
+	}
+
+	// set keys
+	for i, p := range config.Providers {
+		if p.ApiKeyEnv != "" {
+			val, ok := os.LookupEnv(p.ApiKeyEnv)
+			if !ok {
+				return Config{}, fmt.Errorf("could not read environment variable %s", p.ApiKeyEnv)
+			}
+			p.ApiKey = val
+		}
+		config.Providers[i] = p
+	}
+
+	// default values
+	if config.SystemPrompt == "" {
+		config.SystemPrompt = "You are a helpful assistent. Be concise and accurate in your responses."
+	}
+
+	return config, nil
+}
+
 func setupDir(path string) error {
 	info, err := os.Stat(path)
 	switch {
@@ -75,32 +112,4 @@ func setupDir(path string) error {
 	}
 
 	return nil
-}
-
-func ReadConfig() (Config, error) {
-	userConfigDir, err := os.UserConfigDir()
-	if err != nil {
-		return Config{}, fmt.Errorf("could not find user config dir: %v", err)
-	}
-	configDir := filepath.Join(userConfigDir, "henk")
-	if err := setupDir(configDir); err != nil {
-		return Config{}, err
-	}
-	if err := setupDir(configDir); err != nil {
-		return Config{}, fmt.Errorf("could not create config dir: %v", err)
-	}
-	configPath := filepath.Join(configDir, "config.toml")
-
-	var config Config
-	_, err = toml.DecodeFile(configPath, &config)
-	if err != nil {
-		return Config{}, fmt.Errorf("could not read config file: %v", err)
-	}
-
-	// default values
-	if config.SystemPrompt == "" {
-		config.SystemPrompt = "You are a helpful assistent. Be concise and accurate in your responses."
-	}
-
-	return config, nil
 }

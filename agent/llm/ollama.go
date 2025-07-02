@@ -13,19 +13,16 @@ import (
 )
 
 type Ollama struct {
-	baseURL      string
+	provider     Provider
 	model        string
 	systemPrompt string
 	contextSize  int
 	client       *http.Client
 }
 
-func NewOllama(baseURL, model, systemPrompt string, contextSize int) *Ollama {
-	if baseURL == "" {
-		baseURL = "http://localhost:11434"
-	}
+func NewOllama(provider Provider, model, systemPrompt string, contextSize int) *Ollama {
 	return &Ollama{
-		baseURL:      baseURL,
+		provider:     provider,
 		model:        model,
 		systemPrompt: systemPrompt,
 		contextSize:  contextSize,
@@ -33,53 +30,8 @@ func NewOllama(baseURL, model, systemPrompt string, contextSize int) *Ollama {
 	}
 }
 
-type ollamaMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type ollamaTool struct {
-	Type     string             `json:"type"`
-	Function ollamaToolFunction `json:"function"`
-}
-
-type ollamaToolFunction struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Parameters  map[string]interface{} `json:"parameters"`
-}
-
-type ollamaToolCall struct {
-	Function ollamaToolCallFunction `json:"function"`
-}
-
-type ollamaToolCallFunction struct {
-	Name      string          `json:"name"`
-	Arguments json.RawMessage `json:"arguments"`
-}
-
-type ollamaChatRequestOptions struct {
-	NumCtx int `json:"num_ctx,omitempty"`
-}
-
-type ollamaChatRequest struct {
-	Model    string                   `json:"model"`
-	Messages []ollamaMessage          `json:"messages"`
-	Tools    []ollamaTool             `json:"tools,omitempty"`
-	Stream   bool                     `json:"stream"`
-	Options  ollamaChatRequestOptions `json:"options,omitempty"`
-}
-
-type ollamaChatResponse struct {
-	Message    ollamaResponseMessage `json:"message"`
-	Done       bool                  `json:"done"`
-	DoneReason string                `json:"done_reason,omitempty"`
-}
-
-type ollamaResponseMessage struct {
-	Role      string           `json:"role"`
-	Content   string           `json:"content"`
-	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
+func (o *Ollama) ModelInfo() (string, string) {
+	return o.provider.Name, o.model
 }
 
 func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
@@ -172,7 +124,8 @@ func (o *Ollama) makeRequest(ctx context.Context, request ollamaChatRequest) (*o
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/api/chat", bytes.NewBuffer(jsonData))
+	url := fmt.Sprintf("%s/api/chat", o.provider.BaseURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -227,4 +180,53 @@ func (o *Ollama) convertResponse(resp *ollamaChatResponse, tools []tool.Tool) (M
 	}
 
 	return message, nil
+}
+
+type ollamaMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type ollamaTool struct {
+	Type     string             `json:"type"`
+	Function ollamaToolFunction `json:"function"`
+}
+
+type ollamaToolFunction struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Parameters  map[string]interface{} `json:"parameters"`
+}
+
+type ollamaToolCall struct {
+	Function ollamaToolCallFunction `json:"function"`
+}
+
+type ollamaToolCallFunction struct {
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"`
+}
+
+type ollamaChatRequestOptions struct {
+	NumCtx int `json:"num_ctx,omitempty"`
+}
+
+type ollamaChatRequest struct {
+	Model    string                   `json:"model"`
+	Messages []ollamaMessage          `json:"messages"`
+	Tools    []ollamaTool             `json:"tools,omitempty"`
+	Stream   bool                     `json:"stream"`
+	Options  ollamaChatRequestOptions `json:"options,omitempty"`
+}
+
+type ollamaChatResponse struct {
+	Message    ollamaResponseMessage `json:"message"`
+	Done       bool                  `json:"done"`
+	DoneReason string                `json:"done_reason,omitempty"`
+}
+
+type ollamaResponseMessage struct {
+	Role      string           `json:"role"`
+	Content   string           `json:"content"`
+	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
 }

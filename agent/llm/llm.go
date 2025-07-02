@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
 type LLM interface {
+	ModelInfo() (provider, model string)
 	RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error)
 }
 
@@ -63,8 +63,9 @@ type Model struct {
 }
 
 type Provider struct {
-	Type      string  `toml:"type"`
-	BaseURL   string  `toml:"base_url"`
+	Type      string `toml:"type"`
+	BaseURL   string `toml:"base_url"`
+	ApiKey    string
 	ApiKeyEnv string  `toml:"api_key_env"`
 	Name      string  `toml:"name"`
 	Models    []Model `toml:"models"`
@@ -95,18 +96,11 @@ func NewLLM(provider Provider, systemPrompt string) (LLM, error) {
 	model := provider.DefaultModel()
 	switch provider.Type {
 	case "claude":
-		return NewClaude(model.Name, systemPrompt), nil
+		return NewClaude(provider, model.Name, systemPrompt), nil
 	case "openai":
-		var apiKey string
-		if provider.ApiKeyEnv != "" {
-			val, ok := os.LookupEnv(provider.ApiKeyEnv)
-			if ok {
-				apiKey = val
-			}
-		}
-		return NewOpenAI(provider.BaseURL, apiKey, model.Name, systemPrompt), nil
+		return NewOpenAI(provider, model.Name, systemPrompt), nil
 	case "ollama":
-		return NewOllama(provider.BaseURL, model.Name, systemPrompt, model.ContextSize), nil
+		return NewOllama(provider, model.Name, systemPrompt, model.ContextSize), nil
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
 	}

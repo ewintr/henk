@@ -112,18 +112,6 @@ func (a *Agent) converse() error {
 	}
 }
 
-func (a *Agent) runCommand(input string) {
-	cmd, _, _ := strings.Cut(input, " ")
-	cmd = strings.TrimPrefix(cmd, "/")
-	switch cmd {
-	case "quit":
-		a.done = true
-		a.out <- Message{Type: TypeExit}
-	case "models":
-		a.listModels()
-	}
-}
-
 func (a *Agent) executeTool(id, name string, input json.RawMessage) llm.ToolResult {
 	var t tool.Tool
 	var found bool

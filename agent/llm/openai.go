@@ -10,19 +10,24 @@ import (
 
 type OpenAI struct {
 	client       *openai.Client
+	provider     Provider
 	model        string
 	systemPrompt string
 }
 
-func NewOpenAI(baseURL, apiKey, model, systemPrompt string) *OpenAI {
-	config := openai.DefaultConfig(apiKey)
-	config.BaseURL = baseURL
+func NewOpenAI(provider Provider, model, systemPrompt string) *OpenAI {
+	config := openai.DefaultConfig(provider.ApiKey)
+	config.BaseURL = provider.BaseURL
 	c := openai.NewClientWithConfig(config)
 	return &OpenAI{
 		client:       c,
 		model:        model,
 		systemPrompt: systemPrompt,
 	}
+}
+
+func (o *OpenAI) ModelInfo() (string, string) {
+	return o.provider.Name, o.model
 }
 
 func (o *OpenAI) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
