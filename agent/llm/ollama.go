@@ -13,25 +13,32 @@ import (
 )
 
 type Ollama struct {
-	provider     Provider
-	model        string
-	systemPrompt string
-	contextSize  int
-	client       *http.Client
+	provider       Provider
+	modelName      string
+	modelShortName string
+	systemPrompt   string
+	contextSize    int
+	client         *http.Client
 }
 
-func NewOllama(provider Provider, model, systemPrompt string, contextSize int) *Ollama {
-	return &Ollama{
-		provider:     provider,
-		model:        model,
-		systemPrompt: systemPrompt,
-		contextSize:  contextSize,
-		client:       &http.Client{},
+func NewOllama(provider Provider, modelName, systemPrompt string) (*Ollama, error) {
+	m, ok := provider.Model(modelName)
+	if !ok {
+		return nil, fmt.Errorf("%w: could not find model %q in provider %q", ErrUnknownModel, modelName, provider.Name)
 	}
+
+	return &Ollama{
+		provider:       provider,
+		modelName:      m.Name,
+		modelShortName: m.ShortName,
+		systemPrompt:   systemPrompt,
+		contextSize:    m.ContextSize,
+		client:         &http.Client{},
+	}, nil
 }
 
-func (o *Ollama) ModelInfo() (string, string) {
-	return o.provider.Name, o.model
+func (o *Ollama) ModelInfo() (string, string, string) {
+	return o.provider.Name, o.modelName, o.modelShortName
 }
 
 func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
@@ -100,7 +107,7 @@ func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversati
 
 	// Create request
 	request := ollamaChatRequest{
-		Model:    o.model,
+		Model:    o.modelName,
 		Messages: ollamaMessages,
 		Tools:    ollamaTools,
 		Options: ollamaChatRequestOptions{

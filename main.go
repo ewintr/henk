@@ -21,9 +21,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	prov, ok := config.Provider(config.DefaultProvider)
+	if !ok {
+		fmt.Println("could not find provider %q", config.DefaultProvider)
+		os.Exit(1)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
-
-	llmClient, err := llm.NewLLM(config.Provider(), config.SystemPrompt)
+	llmClient, err := llm.NewLLM(prov, config.DefaultModel, config.SystemPrompt)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

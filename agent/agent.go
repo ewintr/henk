@@ -11,13 +11,15 @@ import (
 )
 
 type Agent struct {
-	config    Config
-	llmClient llm.LLM
-	tools     []tool.Tool
-	out       chan Message
-	in        chan string
-	done      bool
-	ctx       context.Context
+	config           Config
+	selectedProvider string
+	selectedModel    string
+	llmClient        llm.LLM
+	tools            []tool.Tool
+	out              chan Message
+	in               chan string
+	done             bool
+	ctx              context.Context
 }
 
 func New(ctx context.Context, config Config, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {

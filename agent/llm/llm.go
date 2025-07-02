@@ -3,13 +3,18 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go-mod.ewintr.nl/henk/agent/tool"
 )
 
+var (
+	ErrUnknownModel = errors.New("unknown model")
+)
+
 type LLM interface {
-	ModelInfo() (provider, model string)
+	ModelInfo() (provider, model, short string)
 	RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error)
 }
 
@@ -71,36 +76,24 @@ type Provider struct {
 	Models    []Model `toml:"models"`
 }
 
-func (p Provider) DefaultModel() Model {
-	var m Model
-	// Find default model
-	for _, model := range p.Models {
-		if model.Default {
-			m = model
+func (p Provider) Model(name string) (Model, bool) {
+	for _, m := range p.Models {
+		if m.Name == name || m.ShortName == name {
+			return m, true
 		}
 	}
 
-	// If no default, return first model
-	if m.Name == "" && len(p.Models) > 0 {
-		m = p.Models[0]
-	}
-
-	if m.ContextSize == 0 {
-		m.ContextSize = 8096
-	}
-
-	return m
+	return Model{}, false
 }
 
-func NewLLM(provider Provider, systemPrompt string) (LLM, error) {
-	model := provider.DefaultModel()
+func NewLLM(provider Provider, modelName, systemPrompt string) (LLM, error) {
 	switch provider.Type {
 	case "claude":
-		return NewClaude(provider, model.Name, systemPrompt), nil
+		return NewClaude(provider, modelName, systemPrompt)
 	case "openai":
-		return NewOpenAI(provider, model.Name, systemPrompt), nil
+		return NewOpenAI(provider, modelName, systemPrompt)
 	case "ollama":
-		return NewOllama(provider, model.Name, systemPrompt, model.ContextSize), nil
+		return NewOllama(provider, modelName, systemPrompt)
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
 	}

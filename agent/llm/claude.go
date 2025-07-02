@@ -10,24 +10,31 @@ import (
 )
 
 type Claude struct {
-	client       *anthropic.Client
-	provider     Provider
-	modelName    string
-	systemPrompt string
+	client         *anthropic.Client
+	provider       Provider
+	modelName      string
+	modelShortName string
+	systemPrompt   string
 }
 
-func NewClaude(provider Provider, modelName, systemPrompt string) *Claude {
+func NewClaude(provider Provider, modelName, systemPrompt string) (*Claude, error) {
+	m, ok := provider.Model(modelName)
+	if !ok {
+		return nil, fmt.Errorf("%w: could not find model %q in provider %q", ErrUnknownModel, modelName, provider.Name)
+	}
+
 	c := anthropic.NewClient()
 	return &Claude{
-		client:       &c,
-		provider:     provider,
-		modelName:    modelName,
-		systemPrompt: systemPrompt,
-	}
+		client:         &c,
+		provider:       provider,
+		modelName:      m.Name,
+		modelShortName: m.ShortName,
+		systemPrompt:   systemPrompt,
+	}, nil
 }
 
-func (c *Claude) ModelInfo() (string, string) {
-	return c.provider.Name, c.modelName
+func (c *Claude) ModelInfo() (string, string, string) {
+	return c.provider.Name, c.modelName, c.modelShortName
 }
 
 func (c *Claude) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {

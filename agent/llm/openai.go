@@ -9,25 +9,33 @@ import (
 )
 
 type OpenAI struct {
-	client       *openai.Client
-	provider     Provider
-	model        string
-	systemPrompt string
+	client         *openai.Client
+	provider       Provider
+	modelName      string
+	modelShortName string
+	systemPrompt   string
 }
 
-func NewOpenAI(provider Provider, model, systemPrompt string) *OpenAI {
+func NewOpenAI(provider Provider, modelName, systemPrompt string) (*OpenAI, error) {
+	m, ok := provider.Model(modelName)
+	if !ok {
+		return nil, fmt.Errorf("%w: could not find model %q in provider %q", ErrUnknownModel, modelName, provider.Name)
+	}
+
 	config := openai.DefaultConfig(provider.ApiKey)
 	config.BaseURL = provider.BaseURL
 	c := openai.NewClientWithConfig(config)
 	return &OpenAI{
-		client:       c,
-		model:        model,
-		systemPrompt: systemPrompt,
-	}
+		client:         c,
+		provider:       provider,
+		modelName:      m.Name,
+		modelShortName: m.ShortName,
+		systemPrompt:   systemPrompt,
+	}, nil
 }
 
-func (o *OpenAI) ModelInfo() (string, string) {
-	return o.provider.Name, o.model
+func (o *OpenAI) ModelInfo() (string, string, string) {
+	return o.provider.Name, o.modelName, o.modelShortName
 }
 
 func (o *OpenAI) RunInference(ctx context.Context, tools []tool.Tool, conversation []Message) (Message, error) {
@@ -96,7 +104,7 @@ func (o *OpenAI) RunInference(ctx context.Context, tools []tool.Tool, conversati
 	}
 
 	req := openai.ChatCompletionRequest{
-		Model:    o.model,
+		Model:    o.modelName,
 		Messages: openaiConv,
 		Tools:    openaiTools,
 	}

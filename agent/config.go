@@ -10,8 +10,10 @@ import (
 )
 
 type Config struct {
-	Providers    []llm.Provider `toml:"providers"`
-	SystemPrompt string         `toml:"system_prompt"`
+	DefaultProvider string         `toml:"default_provider"`
+	DefaultModel    string         `toml:"default_model"`
+	Providers       []llm.Provider `toml:"providers"`
+	SystemPrompt    string         `toml:"system_prompt"`
 }
 
 func (c Config) Validate() error {
@@ -43,22 +45,14 @@ func (c Config) Validate() error {
 	return nil
 }
 
-func (c Config) Provider() llm.Provider {
-	// Find provider with default model
+func (c Config) Provider(name string) (llm.Provider, bool) {
 	for _, provider := range c.Providers {
-		for _, model := range provider.Models {
-			if model.Default {
-				return provider
-			}
+		if provider.Name == name {
+			return provider, true
 		}
 	}
 
-	// If no default, return first provider
-	if len(c.Providers) > 0 {
-		return c.Providers[0]
-	}
-
-	return llm.Provider{}
+	return llm.Provider{}, false
 }
 
 func ReadConfig() (Config, error) {
