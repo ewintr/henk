@@ -55,6 +55,16 @@ func (c Config) Provider(name string) (llm.Provider, bool) {
 	return llm.Provider{}, false
 }
 
+func (c Config) ProviderByModelName(name string) (llm.Provider, bool) {
+	for _, provider := range c.Providers {
+		if _, ok := provider.Model(name); ok {
+			return provider, true
+		}
+	}
+
+	return llm.Provider{}, false
+}
+
 func ReadConfig() (Config, error) {
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {

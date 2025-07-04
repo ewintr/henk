@@ -146,3 +146,7 @@ func (a *Agent) executeTool(id, name string, input json.RawMessage) llm.ToolResu
 		Result: response,
 	}
 }
+
+func (a *Agent) displayError(msg string) {
+	a.out <- Message{Type: TypeError, Body: msg}
+}
