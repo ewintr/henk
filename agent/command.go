@@ -11,6 +11,7 @@ import (
 
 var (
 	listModelsTpl *template.Template
+	helpTpl       *template.Template
 )
 
 func init() {
@@ -21,6 +22,14 @@ func init() {
 {{ end }}
 `))
 
+	helpTpl = template.Must(template.New("help").Parse(`Available commands:   
+
+{{ range $key, $value := . }}
+- **{{ $key }}**: {{ $value }}
+{{ end }}
+
+Also, press ctrl-e to open an editor to edit your message.
+`))
 }
 
 func (a *Agent) runCommand(input string) {
@@ -32,6 +41,8 @@ func (a *Agent) runCommand(input string) {
 		a.out <- Message{Type: TypeExit}
 	case "status":
 		a.showStatus()
+	case "help":
+		a.showHelp()
 	case "models":
 		a.listModels()
 	case "switch":
@@ -46,6 +57,23 @@ func (a *Agent) showStatus() {
 		status = fmt.Sprintf("%s (%s)", status, short)
 	}
 	a.out <- Message{Type: TypeGeneral, Body: status}
+}
+
+func (a *Agent) showHelp() {
+	cmds := map[string]string{
+		"/help":                      "Show this help message",
+		"/status":                    "Show current LLM",
+		"/models":                    "List available models",
+		"/switch [model]":            "Switch to model with complete name  or short name",
+		"/switch [provider] [model]": "Switch to specific provider model",
+		"/quit":                      "Exit the agent",
+	}
+	msg := bytes.NewBuffer([]byte{})
+	if err := helpTpl.Execute(msg, cmds); err != nil {
+		a.out <- Message{Type: TypeError, Body: fmt.Sprintf("could not execute help template: %v", err.Error())}
+		return
+	}
+	a.out <- Message{Type: TypeGeneral, Body: msg.String()}
 }
 
 func (a *Agent) listModels() {

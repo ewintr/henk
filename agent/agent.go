@@ -48,7 +48,7 @@ func (a *Agent) converse() error {
 
 	a.out <- Message{
 		Type: TypeGeneral,
-		Body: "Chat with Henk (use '/quit' to quit)",
+		Body: "Chat with Henk (use '/help' for help, '/quit' to quit)",
 	}
 
 	readUserInput := true
