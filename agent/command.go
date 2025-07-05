@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"text/template"
 
@@ -49,6 +50,8 @@ func (a *Agent) runCommand(input string) {
 		a.switchModel(args)
 	case "clear":
 		a.clearContext()
+	case "copy":
+		a.copyLastMessage()
 	}
 }
 
@@ -69,6 +72,7 @@ func (a *Agent) showHelp() {
 		"/switch [model]":            "Switch to model with complete name  or short name",
 		"/switch [provider] [model]": "Switch to specific provider model",
 		"/clear":                     "Reset conversation, clear the context",
+		"/copy":                      "Copy last message to the clipboard",
 		"/quit":                      "Exit the agent",
 	}
 	msg := bytes.NewBuffer([]byte{})
@@ -142,4 +146,43 @@ func (a *Agent) switchModel(args string) {
 func (a *Agent) clearContext() {
 	a.conversation = make([]llm.Message, 0)
 	a.displayGen("Context cleared")
+}
+
+func (a *Agent) copyLastMessage() {
+	if a.config.ClipboardCommand == "" {
+		a.displayError("No clipboard command configured in config file")
+		return
+	}
+
+	// Find the last assistant message with text content
+	var lastText string
+	for i := len(a.conversation) - 1; i >= 0; i-- {
+		msg := a.conversation[i]
+		if msg.Role == llm.RoleAssistant {
+			for _, content := range msg.Content {
+				if content.Type == llm.ContentTypeText && content.Text != "" {
+					lastText = content.Text
+					break
+				}
+			}
+			if lastText != "" {
+				break
+			}
+		}
+	}
+
+	if lastText == "" {
+		a.displayError("No assistant message found to copy")
+		return
+	}
+
+	// Execute the clipboard command with text piped to stdin
+	cmd := exec.Command("sh", "-c", a.config.ClipboardCommand)
+	cmd.Stdin = strings.NewReader(lastText)
+	if err := cmd.Run(); err != nil {
+		a.displayError(fmt.Sprintf("Failed to copy to clipboard: %v", err))
+		return
+	}
+
+	a.displayGen("Last message copied to clipboard")
 }

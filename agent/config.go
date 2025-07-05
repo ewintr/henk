@@ -10,10 +10,11 @@ import (
 )
 
 type Config struct {
-	DefaultProvider string         `toml:"default_provider"`
-	DefaultModel    string         `toml:"default_model"`
-	Providers       []llm.Provider `toml:"providers"`
-	SystemPrompt    string         `toml:"system_prompt"`
+	DefaultProvider  string         `toml:"default_provider"`
+	DefaultModel     string         `toml:"default_model"`
+	Providers        []llm.Provider `toml:"providers"`
+	SystemPrompt     string         `toml:"system_prompt"`
+	ClipboardCommand string         `toml:"clipboard_command"`
 }
 
 func (c Config) Validate() error {
