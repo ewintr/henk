@@ -47,6 +47,8 @@ func (a *Agent) runCommand(input string) {
 		a.listModels()
 	case "switch":
 		a.switchModel(args)
+	case "clear":
+		a.clearContext()
 	}
 }
 
@@ -66,6 +68,7 @@ func (a *Agent) showHelp() {
 		"/models":                    "List available models",
 		"/switch [model]":            "Switch to model with complete name  or short name",
 		"/switch [provider] [model]": "Switch to specific provider model",
+		"/clear":                     "Reset conversation, clear the context",
 		"/quit":                      "Exit the agent",
 	}
 	msg := bytes.NewBuffer([]byte{})
@@ -134,4 +137,9 @@ func (a *Agent) switchModel(args string) {
 	a.llmClient = newClient
 
 	a.showStatus()
+}
+
+func (a *Agent) clearContext() {
+	a.conversation = make([]llm.Message, 0)
+	a.displayGen("Context cleared")
 }

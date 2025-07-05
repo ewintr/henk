@@ -16,6 +16,7 @@ type Agent struct {
 	selectedModel    string
 	llmClient        llm.LLM
 	tools            []tool.Tool
+	conversation     []llm.Message
 	out              chan Message
 	in               chan string
 	done             bool
@@ -24,12 +25,13 @@ type Agent struct {
 
 func New(ctx context.Context, config Config, llmClient llm.LLM, tools []tool.Tool, out chan Message, in chan string) *Agent {
 	return &Agent{
-		config:    config,
-		llmClient: llmClient,
-		tools:     tools,
-		out:       out,
-		in:        in,
-		ctx:       ctx,
+		config:       config,
+		llmClient:    llmClient,
+		tools:        tools,
+		conversation: make([]llm.Message, 0),
+		out:          out,
+		in:           in,
+		ctx:          ctx,
 	}
 }
 
@@ -44,7 +46,6 @@ func (a *Agent) Run() error {
 
 func (a *Agent) converse() error {
 	ctx := context.Background()
-	conversation := make([]llm.Message, 0)
 
 	a.out <- Message{
 		Type: TypeGeneral,
@@ -71,16 +72,16 @@ func (a *Agent) converse() error {
 					Type: llm.ContentTypeText,
 				}},
 			}
-			conversation = append(conversation, userMessage)
+			a.conversation = append(a.conversation, userMessage)
 		}
 
-		message, err := a.llmClient.RunInference(ctx, a.tools, conversation)
+		message, err := a.llmClient.RunInference(ctx, a.tools, a.conversation)
 		if err != nil {
 			a.out <- Message{Type: TypeError, Body: err.Error()}
 			continue
 		}
 
-		conversation = append(conversation, message)
+		a.conversation = append(a.conversation, message)
 		toolResults := make([]llm.Message, 0)
 		for _, content := range message.Content {
 			switch content.Type {
@@ -110,7 +111,7 @@ func (a *Agent) converse() error {
 		}
 
 		readUserInput = false
-		conversation = append(conversation, toolResults...)
+		a.conversation = append(a.conversation, toolResults...)
 	}
 }
 
@@ -149,4 +150,8 @@ func (a *Agent) executeTool(id, name string, input json.RawMessage) llm.ToolResu
 
 func (a *Agent) displayError(msg string) {
 	a.out <- Message{Type: TypeError, Body: msg}
+}
+
+func (a *Agent) displayGen(msg string) {
+	a.out <- Message{Type: TypeGeneral, Body: msg}
 }
