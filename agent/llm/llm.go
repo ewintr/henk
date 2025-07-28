@@ -61,10 +61,11 @@ type Message struct {
 type Conversation struct{}
 
 type Model struct {
-	Name        string `toml:"name"`
-	ShortName   string `toml:"short_name"`
-	Default     bool   `toml:"default"`
-	ContextSize int    `toml:"context_size"`
+	Name         string `toml:"name"`
+	ShortName    string `toml:"short_name"`
+	Default      bool   `toml:"default"`
+	ContextSize  int    `toml:"context_size"`
+	ThinkingMode bool   `toml:"thinking_mode"`
 }
 
 type Provider struct {

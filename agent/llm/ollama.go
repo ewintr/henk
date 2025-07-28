@@ -18,6 +18,7 @@ type Ollama struct {
 	modelShortName string
 	systemPrompt   string
 	contextSize    int
+	thinkingMode   bool
 	client         *http.Client
 }
 
@@ -33,6 +34,7 @@ func NewOllama(provider Provider, modelName, systemPrompt string) (*Ollama, erro
 		modelShortName: m.ShortName,
 		systemPrompt:   systemPrompt,
 		contextSize:    m.ContextSize,
+		thinkingMode:   m.ThinkingMode,
 		client:         &http.Client{},
 	}, nil
 }
@@ -110,6 +112,7 @@ func (o *Ollama) RunInference(ctx context.Context, tools []tool.Tool, conversati
 		Model:    o.modelName,
 		Messages: ollamaMessages,
 		Tools:    ollamaTools,
+		Think:    o.thinkingMode,
 		Options: ollamaChatRequestOptions{
 			NumCtx: o.contextSize,
 		},
@@ -224,6 +227,7 @@ type ollamaChatRequest struct {
 	Tools    []ollamaTool             `json:"tools,omitempty"`
 	Stream   bool                     `json:"stream"`
 	Options  ollamaChatRequestOptions `json:"options,omitempty"`
+	Think    bool                     `json:"think,omitempty"`
 }
 
 type ollamaChatResponse struct {
