@@ -1,6 +1,6 @@
 # Henk - Local AI Code Assistant
 
-**Note: ** Henk is currently in alpha. Examples and instructions on how to use it will be added shortly.
+**Note:** Henk is currently in alpha. Examples and instructions on how to use it will be added shortly.
 
 ## Ideal end application
 
